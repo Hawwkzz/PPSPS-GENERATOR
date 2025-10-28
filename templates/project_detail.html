@@ -1,0 +1,308 @@
+{% extends "layout_seo.html" %}
+{% block title %}Projet – {{ p.name }}{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto p-6 space-y-8">
+
+  <!-- En-tête -->
+  <header class="flex items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-semibold">{{ p.name }}</h1>
+      <p class="text-sm text-slate-600">{{ p.address }}</p>
+    </div>
+    <a href="/ui/projects" class="px-3 py-2 text-sm border rounded hover:bg-slate-50">Retour</a>
+  </header>
+
+  <!-- Actions rapides (en premier) -->
+  <section class="grid md:grid-cols-2 gap-6 items-stretch">
+    <!-- Upload fichier -->
+    <div class="bg-white rounded-lg shadow p-5 flex flex-col">
+      <h2 class="text-lg font-medium mb-3">Uploader un fichier</h2>
+
+      <form method="post"
+            action="/ui/projects/{{ p.id }}/files/upload"
+            enctype="multipart/form-data"
+            class="grid grid-cols-[1fr_auto] gap-3 items-center mt-1">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="file"
+               name="file"
+               accept=".pdf,.docx,.txt,.md"
+               required
+               class="col-start-1 border rounded px-3 h-10 text-sm file:mr-3 file:px-3 file:py-2 file:border-0 file:bg-slate-100 file:rounded file:text-sm file:hover:bg-slate-200 w-full" />
+        <button type="submit"
+                class="col-start-2 w-40 h-10 px-4 rounded text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2">
+          Uploader
+        </button>
+      </form>
+
+      <p class="text-xs text-slate-500 mt-4">PDF, DOCX, TXT, MD. Max selon quotas projet.</p>
+    </div>
+
+    <!-- Générer PPSPS -->
+    <div class="bg-white rounded-lg shadow p-5 flex flex-col">
+      <h2 class="text-lg font-medium mb-3">Générer votre PPSPS</h2>
+
+      <form method="post"
+            action="/ui/projects/{{ p.id }}/gen/ppsps"
+            class="mt-1">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        {% set has_files = files|length > 0 %}
+        <button type="submit"
+                class="w-40 h-10 px-4 rounded text-sm font-medium text-white
+                       {{ 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2' if has_files else 'bg-blue-400 opacity-60 cursor-not-allowed' }}"
+                {{ 'disabled' if not has_files else '' }}>
+          Générer le PPSPS
+        </button>
+      </form>
+
+      <p class="text-xs text-slate-500 mt-4">
+        {{ 'Le document sera généré à partir des pièces uploadées.' if has_files
+           else 'Ajoutez au moins une pièce pour activer la génération.' }}
+      </p>
+    </div>
+  </section>
+
+  <!-- Disclaimer de responsabilité -->
+  <section class="bg-amber-50 border-l-4 border-amber-400 p-4 rounded">
+    <div class="flex items-start gap-3">
+      <svg class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+      </svg>
+      <div class="text-sm text-amber-900">
+        <p class="font-semibold mb-1">⚠️ Important : Document à réviser obligatoirement</p>
+        <p>Le PPSPS généré est une <strong>ébauche automatisée</strong> qui nécessite impérativement une <strong>révision et validation humaine</strong> par un professionnel qualifié (coordonnateur SPS, responsable travaux, etc.) avant toute utilisation sur chantier.</p>
+        <p class="mt-2">PPSPS Generator décline toute responsabilité en cas d'utilisation d'un document non préalablement contrôlé, modifié et validé par un expert compétent. Ce service est un outil d'aide à la rédaction, non un substitut au jugement professionnel.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Infos projet (après actions) -->
+  <section class="mt-2 grid sm:grid-cols-3 gap-3">
+    <div class="bg-white rounded-lg shadow p-4">
+      <div class="text-xs text-slate-500">Travaux</div>
+      <div class="font-medium">
+        {% set works = (p.works_csv or '').split(',') | select('string') | map('trim') | list %}
+        {{ works|reject('equalto','')|list|join(', ') if works else '–' }}
+      </div>
+    </div>
+    <div class="bg-white rounded-lg shadow p-4">
+      <div class="text-xs text-slate-500">Effectif</div>
+      <div class="font-medium">{{ p.workforce or 0 }}</div>
+    </div>
+    <div class="bg-white rounded-lg shadow p-4">
+      <div class="text-xs text-slate-500">Durée (sem.)</div>
+      <div class="font-medium">{{ p.duration_weeks or 0 }}</div>
+    </div>
+  </section>
+
+  <!-- Fichiers -->
+  <section class="bg-white rounded-lg shadow">
+    <div class="p-5 border-b"><h2 class="text-lg font-medium">Fichiers</h2></div>
+    <div class="p-5 overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="text-left text-slate-600">
+          <tr>
+            <th class="py-2 pr-4">Nom</th>
+            <th class="py-2 pr-4">Taille</th>
+            <th class="py-2 pr-4">Type</th>
+            <th class="py-2 pr-4">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in files %}
+          <tr class="border-t">
+            <td class="py-2 pr-4">{{ f.filename }}</td>
+            <td class="py-2 pr-4">{{ (f.size_bytes or 0) // 1024 }} Ko</td>
+            <td class="py-2 pr-4">{{ f.mime_type }}</td>
+            <td class="py-2 pr-4">
+              <div class="flex items-center gap-2">
+                <a href="/files/{{ f.id }}/download" class="px-2 py-1 border rounded hover:bg-slate-50">Télécharger</a>
+                <button data-file-id="{{ f.id }}" class="js-del-file px-2 py-1 border rounded text-red-600 hover:bg-red-50">Supprimer</button>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="py-4 text-slate-500">Aucun fichier.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Documents générés -->
+  <section class="bg-white rounded-lg shadow">
+    <div class="p-5 border-b"><h2 class="text-lg font-medium">Documents</h2></div>
+    <div class="p-5 overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="text-left text-slate-600">
+          <tr>
+            <th class="py-2 pr-4">Type</th>
+            <th class="py-2 pr-4">Version</th>
+            <th class="py-2 pr-4">Statut</th>
+            <th class="py-2 pr-4">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in docs %}
+          <tr class="border-t">
+            <td class="py-2 pr-4">{{ d.doc_type }}</td>
+            <td class="py-2 pr-4">v{{ d.version }}</td>
+            <td class="py-2 pr-4">{{ d.status }}</td>
+            <td class="py-2 pr-4">
+              <div class="flex items-center gap-2">
+                <a href="/documents/{{ d.id }}/export_docx" class="px-2 py-1 border rounded hover:bg-slate-50">Exporter DOCX</a>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="py-4 text-slate-500">Aucun document pour le moment.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+
+{% block scripts %}
+<script>
+(function(){
+  function setBusy(isBusy, message = 'Génération en cours… merci de patienter'){
+    let ov = document.getElementById('busy-overlay');
+    if (!ov){
+      ov = document.createElement('div');
+      ov.id = 'busy-overlay';
+      ov.style.position = 'fixed';
+      ov.style.inset = '0';
+      ov.style.background = 'rgba(255,255,255,0.65)';
+      ov.style.backdropFilter = 'blur(2px)';
+      ov.style.zIndex = '9999';
+      ov.style.display = 'none';
+      document.body.appendChild(ov);
+    }
+    
+    ov.innerHTML = `
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+        <div style="padding:16px 20px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;box-shadow:0 4px 14px rgba(0,0,0,0.08);font:14px/1.4 system-ui">
+          ${message}
+        </div>
+      </div>`;
+    
+    ov.style.display = isBusy ? 'block' : 'none';
+    document.body.setAttribute('aria-busy', isBusy ? 'true' : 'false');
+
+    const sel = 'button, input, select, textarea, a[href]';
+    document.querySelectorAll(sel).forEach(el => {
+      if (el.closest('.allow-during-busy')) return;
+      if (isBusy){
+        if (el.tagName === 'A' && el.hasAttribute('href')){
+          el.dataset._href = el.getAttribute('href');
+          el.removeAttribute('href');
+        }
+        if (el.tagName !== 'A'){
+          el.setAttribute('disabled', 'disabled');
+        }
+        el.classList.add('opacity-60','cursor-not-allowed','pointer-events-none');
+        el.setAttribute('aria-disabled','true');
+      } else {
+        if (el.tagName === 'A' && el.dataset._href){
+          el.setAttribute('href', el.dataset._href);
+          delete el.dataset._href;
+        }
+        if (el.tagName !== 'A'){
+          el.removeAttribute('disabled');
+        }
+        el.classList.remove('opacity-60','cursor-not-allowed','pointer-events-none');
+        el.removeAttribute('aria-disabled');
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const btnGenerate = document.getElementById('btn-generate-ppsps');
+    if (btnGenerate) {
+      btnGenerate.addEventListener('click', async (e) => {
+        e.preventDefault();
+        
+        const projectId = btnGenerate.getAttribute('data-project-id');
+        const csrfToken = btnGenerate.getAttribute('data-csrf');
+        
+        setBusy(true, 'Génération en cours… merci de patienter (peut prendre 1-2 minutes)');
+        btnGenerate.textContent = 'Génération en cours…';
+        
+        try {
+          const formData = new FormData();
+          formData.append('csrf_token', csrfToken);
+          
+          const response = await fetch(`/ui/projects/${projectId}/gen/ppsps`, {
+            method: 'POST',
+            body: formData
+          });
+          
+          if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ppsps_${projectId}.docx`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            setBusy(false);
+            alert('✅ PPSPS généré avec succès ! Le téléchargement va démarrer.');
+            location.reload();
+          } else if (response.status === 402) {
+            setBusy(false);
+            const data = await response.json().catch(() => ({ detail: { message: 'Solde insuffisant' } }));
+            const message = (typeof data.detail === 'object') ? data.detail.message : data.detail;
+            alert('⚠️ ' + message + '\n\nVous allez être redirigé vers la boutique de jetons.');
+            window.location.href = '/tokens/shop';
+          } else {
+            setBusy(false);
+            const data = await response.json().catch(() => ({ detail: 'Erreur inconnue' }));
+            const message = (typeof data.detail === 'object') ? data.detail.message : data.detail;
+            alert('❌ Erreur lors de la génération : ' + message);
+            btnGenerate.textContent = 'Générer le PPSPS';
+          }
+        } catch (error) {
+          setBusy(false);
+          alert('❌ Erreur réseau : ' + error.message);
+          btnGenerate.textContent = 'Générer le PPSPS';
+        }
+      });
+    }
+    
+    document.querySelectorAll('a[href*="/export_docx"]').forEach(a => {
+      a.addEventListener('click', (e) => {
+        if (document.body.getAttribute('aria-busy') === 'true'){
+          e.preventDefault();
+        }
+      });
+    });
+
+    window.addEventListener('pageshow', () => setBusy(false));
+  });
+})();
+
+document.querySelectorAll('.js-del-file').forEach(btn => {
+  btn.addEventListener('click', async (e) => {
+    e.preventDefault();
+    if (!confirm('Supprimer ce fichier ?')) return;
+    const id = btn.getAttribute('data-file-id');
+    const res = await fetch(`/files/${id}`, {
+      method: 'DELETE',
+      headers: { 'X-CSRF-Token': '{{ csrf_token }}' }
+    });
+    if (res.ok) {
+      location.reload();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      alert(data.detail || 'Suppression impossible');
+    }
+  });
+});
+</script>
+{% endblock %}
+
+{% endblock %}

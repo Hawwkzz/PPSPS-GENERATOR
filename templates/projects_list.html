@@ -1,0 +1,127 @@
+{% extends "layout_seo.html" %}
+{% block title %}Mes projets – SPS Copilot{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto p-6 space-y-8">
+  <header class="flex items-center justify-between">
+    <h1 class="text-2xl font-semibold">Mes projets</h1>
+  </header>
+
+  <!-- Create project -->
+  <section class="bg-white rounded-lg shadow p-5">
+    <h2 class="text-lg font-medium mb-4">Créer un projet</h2>
+    
+    <!-- Note d'information sur la priorité des données -->
+    <div class="mb-4 p-3 bg-blue-50 border-l-4 border-blue-400 rounded text-sm text-blue-900">
+      <p class="flex items-start gap-2">
+        <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+        </svg>
+        <span><strong>Priorité des informations :</strong> Les données ci-dessous servent de <strong>référence initiale</strong>. Si vos documents uploadés contiennent des informations différentes (durée, effectif, entreprises, etc.), <strong>ce sont les données des documents qui seront utilisées</strong> dans le PPSPS généré.</span>
+      </p>
+    </div>
+    
+    <form method="post" action="/ui/projects/create" class="grid md:grid-cols-2 gap-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+      <label class="block">
+        <span class="text-sm">Nom du projet</span>
+        <input name="name" required class="mt-1 w-full border rounded px-3 py-2">
+      </label>
+
+      <label class="block md:col-span-2">
+        <span class="text-sm">Adresse</span>
+        <input name="address" required class="mt-1 w-full border rounded px-3 py-2">
+      </label>
+
+      <label class="block">
+        <span class="text-sm">Lots / travaux (séparés par des virgules)</span>
+        <input name="works" placeholder="maçonnerie, électricité, peinture" class="mt-1 w-full border rounded px-3 py-2">
+      </label>
+
+      <label class="block">
+        <span class="text-sm">Entreprises (séparées par des virgules)</span>
+        <input name="companies" placeholder="Société A, Société B" class="mt-1 w-full border rounded px-3 py-2">
+      </label>
+
+      <label class="block">
+        <span class="text-sm">Durée (semaines)</span>
+        <input name="duration_weeks" type="number" min="0" value="0" class="mt-1 w-full border rounded px-3 py-2">
+      </label>
+
+      <label class="block">
+        <span class="text-sm">Effectif max</span>
+        <input name="workforce" type="number" min="0" value="0" class="mt-1 w-full border rounded px-3 py-2">
+      </label>
+
+      <div class="md:col-span-2">
+        <button class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Créer</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Projects table -->
+  <section class="bg-white rounded-lg shadow">
+    <div class="p-5 border-b">
+      <h2 class="text-lg font-medium">Projets</h2>
+    </div>
+    <div class="p-5 overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="text-left text-slate-600">
+          <tr>
+            <th class="py-2 pr-4">Nom</th>
+            <th class="py-2 pr-4">Adresse</th>
+            <th class="py-2 pr-4">Effectif</th>
+            <th class="py-2 pr-4">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for pr in projects %}
+          <tr class="border-t">
+            <td class="py-2 pr-4 font-medium">
+              <a href="/ui/projects/{{ pr.id }}" class="text-blue-600 hover:underline">{{ pr.name }}</a>
+            </td>
+            <td class="py-2 pr-4">{{ pr.address }}</td>
+            <td class="py-2 pr-4">{{ pr.workforce }}</td>
+            <td class="py-2 pr-4">
+              <div class="flex items-center gap-2">
+                <a href="/ui/projects/{{ pr.id }}" class="px-2 py-1 border rounded hover:bg-slate-50">Ouvrir</a>
+                <button
+                  data-id="{{ pr.id }}"
+                  class="js-del-project px-2 py-1 border rounded text-red-600 hover:bg-red-50"
+                >
+                  Supprimer
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="py-4 text-slate-500">Aucun projet pour l'instant.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+{% block scripts %}
+<script>
+document.querySelectorAll(".js-del-project").forEach(btn => {
+  btn.addEventListener("click", async e => {
+    e.preventDefault();
+    const id = btn.dataset.id;
+    if (!confirm("Supprimer ce projet ?")) return;
+    const res = await fetch(`/projects/${id}`, {
+      method: "DELETE",
+      headers: { "X-CSRF-Token": "{{ csrf_token }}" }
+    });
+    if (res.ok) {
+      location.reload();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      alert(data.detail || "Suppression impossible");
+    }
+  });
+});
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <!-- SEO Meta Tags -->
+    <title>{{ meta.title if meta else 'PPSPS Generator – Génération automatique de PPSPS' }}</title>
+    <meta name="description" content="{{ meta.description if meta else 'Générez automatiquement votre PPSPS avec notre IA. Solution rapide et conforme pour les professionnels du BTP.' }}">
+    <meta name="keywords" content="{{ meta.keywords if meta else 'PPSPS, génération PPSPS, IA BTP, prévention chantier' }}">
+    <meta name="robots" content="{{ meta.robots if meta else 'index, follow' }}">
+    <meta name="author" content="PPSPS Generator">
+    {% if meta and meta.canonical %}
+    <link rel="canonical" href="{{ meta.canonical }}">
+    {% endif %}
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="{{ meta.og_type if meta else 'website' }}">
+    <meta property="og:url" content="{{ meta.og_url if meta else request.url }}">
+    <meta property="og:title" content="{{ meta.og_title if meta else 'PPSPS Generator' }}">
+    <meta property="og:description" content="{{ meta.og_description if meta else 'Génération automatique de PPSPS par IA' }}">
+    <meta property="og:image" content="{{ meta.og_image if meta else '/static/og-image.jpg' }}">
+    <meta property="og:site_name" content="PPSPS Generator">
+    <meta property="og:locale" content="fr_FR">
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="{{ meta.twitter_card if meta else 'summary_large_image' }}">
+    <meta name="twitter:url" content="{{ meta.og_url if meta else request.url }}">
+    <meta name="twitter:title" content="{{ meta.twitter_title if meta else 'PPSPS Generator' }}">
+    <meta name="twitter:description" content="{{ meta.twitter_description if meta else 'Génération automatique de PPSPS' }}">
+    <meta name="twitter:image" content="{{ meta.twitter_image if meta else '/static/og-image.jpg' }}">
+    {% if meta and meta.twitter_site %}
+    <meta name="twitter:site" content="{{ meta.twitter_site }}">
+    {% endif %}
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/static/favicon.png">
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+    
+    <!-- Structured Data -->
+    {% if structured_data %}
+    <script type="application/ld+json">
+      {{ structured_data | tojson }}
+    </script>
+    {% endif %}
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    
+    <style>
+      /* Amélioration de l'accessibilité et du SEO */
+      .skip-to-content {
+        position: absolute;
+        left: -9999px;
+        z-index: 999;
+      }
+      .skip-to-content:focus {
+        left: 50%;
+        transform: translateX(-50%);
+        top: 10px;
+        background: #3b82f6;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-50 text-slate-800">
+    <!-- Skip to content (accessibilité) -->
+    <a href="#main-content" class="skip-to-content">
+      Aller au contenu principal
+    </a>
+    
+    {% set is_auth = request.session.get('uid') is not none %}
+
+    <!-- Header avec navigation structurée -->
+    <header class="bg-white border-b border-slate-200" role="banner">
+      <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <a href="{{ '/ui/projects' if is_auth else '/' }}" 
+           class="font-semibold text-slate-900 flex items-center gap-2"
+           aria-label="Retour à l'accueil">
+          <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          <span>PPSPS Generator</span>
+        </a>
+        
+        {% if is_auth %}
+        <nav class="flex items-center gap-4" role="navigation" aria-label="Navigation principale">
+          <a href="/ui/projects" 
+             class="text-slate-600 hover:text-slate-900 transition-colors"
+             {% if request.url.path.startswith('/ui/projects') %}aria-current="page"{% endif %}>
+            Projets
+          </a>
+          <a href="/tokens/shop" 
+             class="text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-1"
+             {% if request.url.path.startswith('/tokens') %}aria-current="page"{% endif %}>
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"/>
+            </svg>
+            Jetons
+          </a>
+          <form method="post" action="/logout">
+            <button class="text-slate-600 hover:text-slate-900 transition-colors">
+              Déconnexion
+            </button>
+          </form>
+        </nav>
+        {% else %}
+        <nav class="flex items-center gap-3" role="navigation" aria-label="Navigation principale">
+          <a href="/login" class="text-slate-600 hover:text-slate-900 transition-colors">
+            Connexion
+          </a>
+          <a href="/register" 
+             class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            Créer un compte
+          </a>
+        </nav>
+        {% endif %}
+      </div>
+    </header>
+
+    <!-- Main content -->
+    <main id="main-content" class="max-w-6xl mx-auto p-4" role="main">
+      {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="max-w-6xl mx-auto px-4 py-6 mt-12 border-t border-slate-200 text-center text-sm text-slate-500">
+      © {{ now().year if now else '2025' }} PPSPS Generator – Tous droits réservés
+    </footer>
+
+    <!-- Loading overlay -->
+    <div id="loading-overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur" role="alert" aria-live="polite">
+      <div class="flex flex-col items-center gap-3">
+        <svg xmlns="http://www.w3.org/2000/svg" class="animate-spin" width="42" height="42" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3" opacity="0.25"/>
+          <path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+        <p class="text-sm text-slate-700">Chargement…</p>
+      </div>
+    </div>
+    
+    <script>
+      (function () {
+        const overlay = document.getElementById('loading-overlay');
+        function show(){ overlay.classList.remove('hidden'); }
+        function hide(){ overlay.classList.add('hidden'); }
+        document.addEventListener('submit', (e) => {
+          const form = e.target;
+          if (form?.dataset?.loading === 'true') {
+            show();
+            setTimeout(hide, 90000);
+          }
+        }, true);
+        window.addEventListener('pageshow', hide);
+      })();
+    </script>
+  </body>
+</html>

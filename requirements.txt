@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+jinja2
+python-dotenv
+sqlmodel
+passlib[bcrypt]
+pypdf
+python-docx
+docx2pdf
+openai
+itsdangerous
+python-multipart
+stripe
+pymupdf
+Pillow
+argon2-cffi
