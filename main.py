@@ -388,7 +388,7 @@ app.add_middleware(
 )
 
 
-templates = Jinja2Templates(directory="app/templates")
+templates = Jinja2Templates(directory="templates")
 
 import secrets
 
