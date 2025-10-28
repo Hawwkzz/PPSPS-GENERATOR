@@ -2081,6 +2081,10 @@ def ensure_file_is_owned(file_id: int, user: UserDB, session: Session) -> Attach
     return att
 
 
+@app.get("/", include_in_schema=False)
+async def redirect_root():
+    return RedirectResponse(url="https://www.ppsps-generator.fr/login")
+
 # =====================================================================
 #                               UI (Jinja)
 # =====================================================================
