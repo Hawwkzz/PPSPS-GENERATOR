@@ -1,101 +1,155 @@
 {% extends "layout_seo.html" %}
-{% block title %}Mes projets – SPS Copilot{% endblock %}
+{% block title %}Mes projets – PPSPS Generator{% endblock %}
 {% block content %}
-<div class="max-w-5xl mx-auto p-6 space-y-8">
-  <header class="flex items-center justify-between">
-    <h1 class="text-2xl font-semibold">Mes projets</h1>
+<div class="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
+  <header>
+    <h1 class="text-3xl sm:text-4xl font-bold text-slate-900">Mes projets</h1>
+    <p class="text-slate-600 mt-2">Gérez vos chantiers et générez vos PPSPS</p>
   </header>
 
-  <!-- Create project -->
-  <section class="bg-white rounded-lg shadow p-5">
-    <h2 class="text-lg font-medium mb-4">Créer un projet</h2>
-    
-    <!-- Note d'information sur la priorité des données -->
-    <div class="mb-4 p-3 bg-blue-50 border-l-4 border-blue-400 rounded text-sm text-blue-900">
-      <p class="flex items-start gap-2">
-        <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+  <!-- Formulaire de création -->
+  <section class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+    <div class="bg-gradient-to-r from-blue-50 to-blue-100/50 border-b border-blue-200 p-6">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-blue-600 rounded-lg">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+          </svg>
+        </div>
+        <h2 class="text-xl font-bold text-slate-900">Créer un projet</h2>
+      </div>
+    </div>
+
+    <!-- Note d'information -->
+    <div class="m-6 mb-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
+      <div class="flex items-start gap-3">
+        <svg class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
           <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
         </svg>
-        <span><strong>Priorité des informations :</strong> Les données ci-dessous servent de <strong>référence initiale</strong>. Si vos documents uploadés contiennent des informations différentes (durée, effectif, entreprises, etc.), <strong>ce sont les données des documents qui seront utilisées</strong> dans le PPSPS généré.</span>
-      </p>
+        <div class="text-sm text-blue-900">
+          <p class="font-semibold mb-1">Priorité des informations</p>
+          <p>Les données ci-dessous servent de <strong>référence initiale</strong>. Si vos documents uploadés contiennent des informations différentes, <strong>ce sont les données des documents qui seront utilisées</strong> dans le PPSPS généré.</p>
+        </div>
+      </div>
     </div>
-    
-    <form method="post" action="/ui/projects/create" class="grid md:grid-cols-2 gap-4">
+
+    <form method="post" action="/ui/projects/create" class="p-6 space-y-6">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
-      <label class="block">
-        <span class="text-sm">Nom du projet</span>
-        <input name="name" required class="mt-1 w-full border rounded px-3 py-2">
-      </label>
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-slate-700 mb-2">Nom du projet *</label>
+          <input type="text" name="name" required
+                 class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                 placeholder="Ex: Rénovation Immeuble Haussmann">
+        </div>
 
-      <label class="block md:col-span-2">
-        <span class="text-sm">Adresse</span>
-        <input name="address" required class="mt-1 w-full border rounded px-3 py-2">
-      </label>
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-slate-700 mb-2">Adresse *</label>
+          <input type="text" name="address" required
+                 class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                 placeholder="123 Rue de la Paix, 75001 Paris">
+        </div>
 
-      <label class="block">
-        <span class="text-sm">Lots / travaux (séparés par des virgules)</span>
-        <input name="works" placeholder="maçonnerie, électricité, peinture" class="mt-1 w-full border rounded px-3 py-2">
-      </label>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">Lots / travaux</label>
+          <input type="text" name="works"
+                 class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                 placeholder="maçonnerie, électricité, peinture">
+        </div>
 
-      <label class="block">
-        <span class="text-sm">Entreprises (séparées par des virgules)</span>
-        <input name="companies" placeholder="Société A, Société B" class="mt-1 w-full border rounded px-3 py-2">
-      </label>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">Entreprises</label>
+          <input type="text" name="companies"
+                 class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                 placeholder="Société A, Société B">
+        </div>
 
-      <label class="block">
-        <span class="text-sm">Durée (semaines)</span>
-        <input name="duration_weeks" type="number" min="0" value="0" class="mt-1 w-full border rounded px-3 py-2">
-      </label>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">Durée (semaines)</label>
+          <input type="number" name="duration_weeks" min="0" value="0"
+                 class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        </div>
 
-      <label class="block">
-        <span class="text-sm">Effectif max</span>
-        <input name="workforce" type="number" min="0" value="0" class="mt-1 w-full border rounded px-3 py-2">
-      </label>
-
-      <div class="md:col-span-2">
-        <button class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Créer</button>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">Effectif max</label>
+          <input type="number" name="workforce" min="0" value="0"
+                 class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        </div>
       </div>
+
+      <button type="submit"
+              class="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-lg shadow-blue-600/30 hover:shadow-blue-600/50 transition-all">
+        Créer le projet
+      </button>
     </form>
   </section>
 
-  <!-- Projects table -->
-  <section class="bg-white rounded-lg shadow">
-    <div class="p-5 border-b">
-      <h2 class="text-lg font-medium">Projets</h2>
+  <!-- Liste des projets -->
+  <section class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+    <div class="bg-gradient-to-r from-slate-50 to-slate-100/50 border-b border-slate-200 p-6">
+      <div class="flex items-center gap-3">
+        <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+        </svg>
+        <h2 class="text-xl font-bold text-slate-900">Projets</h2>
+        <span class="ml-auto px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
+          {{ projects|length }}
+        </span>
+      </div>
     </div>
-    <div class="p-5 overflow-x-auto">
-      <table class="min-w-full text-sm">
-        <thead class="text-left text-slate-600">
+
+    <div class="overflow-x-auto">
+      <table class="min-w-full">
+        <thead class="bg-slate-50 border-b border-slate-200">
           <tr>
-            <th class="py-2 pr-4">Nom</th>
-            <th class="py-2 pr-4">Adresse</th>
-            <th class="py-2 pr-4">Effectif</th>
-            <th class="py-2 pr-4">Actions</th>
+            <th class="py-4 px-6 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Nom</th>
+            <th class="py-4 px-6 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Adresse</th>
+            <th class="py-4 px-6 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Effectif</th>
+            <th class="py-4 px-6 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody class="divide-y divide-slate-100">
           {% for pr in projects %}
-          <tr class="border-t">
-            <td class="py-2 pr-4 font-medium">
-              <a href="/ui/projects/{{ pr.id }}" class="text-blue-600 hover:underline">{{ pr.name }}</a>
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-4 px-6">
+              <a href="/ui/projects/{{ pr.id }}" class="font-semibold text-blue-600 hover:text-blue-700 hover:underline">
+                {{ pr.name }}
+              </a>
             </td>
-            <td class="py-2 pr-4">{{ pr.address }}</td>
-            <td class="py-2 pr-4">{{ pr.workforce }}</td>
-            <td class="py-2 pr-4">
-              <div class="flex items-center gap-2">
-                <a href="/ui/projects/{{ pr.id }}" class="px-2 py-1 border rounded hover:bg-slate-50">Ouvrir</a>
-                <button
-                  data-id="{{ pr.id }}"
-                  class="js-del-project px-2 py-1 border rounded text-red-600 hover:bg-red-50"
-                >
-                  Supprimer
+            <td class="py-4 px-6 text-slate-600 text-sm">{{ pr.address }}</td>
+            <td class="py-4 px-6">
+              <div class="flex items-center gap-2 text-sm text-slate-700">
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                </svg>
+                <span class="font-medium">{{ pr.workforce }}</span>
+              </div>
+            </td>
+            <td class="py-4 px-6">
+              <div class="flex items-center justify-end gap-2">
+                <a href="/ui/projects/{{ pr.id }}"
+                   class="px-4 py-2 border-2 border-slate-300 rounded-lg hover:bg-slate-50 hover:border-slate-400 font-medium text-sm transition-all">
+                  Ouvrir
+                </a>
+                <button data-id="{{ pr.id }}" class="js-del-project p-2 border-2 border-red-200 text-red-600 rounded-lg hover:bg-red-50 hover:border-red-300 transition-all">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                  </svg>
                 </button>
               </div>
             </td>
           </tr>
           {% else %}
-          <tr><td colspan="4" class="py-4 text-slate-500">Aucun projet pour l'instant.</td></tr>
+          <tr>
+            <td colspan="4" class="py-12 text-center">
+              <svg class="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+              </svg>
+              <p class="text-slate-500 font-medium">Aucun projet pour l'instant</p>
+              <p class="text-slate-400 text-sm mt-1">Créez votre premier projet ci-dessus</p>
+            </td>
+          </tr>
           {% endfor %}
         </tbody>
       </table>

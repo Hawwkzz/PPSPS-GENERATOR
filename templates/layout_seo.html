@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    
+
     <!-- SEO Meta Tags -->
     <title>{{ meta.title if meta else 'PPSPS Generator – Génération automatique de PPSPS' }}</title>
     <meta name="description" content="{{ meta.description if meta else 'Générez automatiquement votre PPSPS avec notre IA. Solution rapide et conforme pour les professionnels du BTP.' }}">
@@ -13,7 +13,7 @@
     {% if meta and meta.canonical %}
     <link rel="canonical" href="{{ meta.canonical }}">
     {% endif %}
-    
+
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="{{ meta.og_type if meta else 'website' }}">
     <meta property="og:url" content="{{ meta.og_url if meta else request.url }}">
@@ -22,7 +22,7 @@
     <meta property="og:image" content="{{ meta.og_image if meta else '/static/og-image.jpg' }}">
     <meta property="og:site_name" content="PPSPS Generator">
     <meta property="og:locale" content="fr_FR">
-    
+
     <!-- Twitter -->
     <meta name="twitter:card" content="{{ meta.twitter_card if meta else 'summary_large_image' }}">
     <meta name="twitter:url" content="{{ meta.og_url if meta else request.url }}">
@@ -32,24 +32,40 @@
     {% if meta and meta.twitter_site %}
     <meta name="twitter:site" content="{{ meta.twitter_site }}">
     {% endif %}
-    
+
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/static/favicon.png">
     <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
-    
+
     <!-- Structured Data -->
     {% if structured_data %}
     <script type="application/ld+json">
       {{ structured_data | tojson }}
     </script>
     {% endif %}
-    
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif']
+            }
+          }
+        }
+      }
+    </script>
+
     <style>
-      /* Amélioration de l'accessibilité et du SEO */
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+      body {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      }
+
+      /* Amélioration de l'accessibilité */
       .skip-to-content {
         position: absolute;
         left: -9999px;
@@ -59,90 +75,117 @@
         left: 50%;
         transform: translateX(-50%);
         top: 10px;
-        background: #3b82f6;
+        background: #2563eb;
         color: white;
         padding: 0.5rem 1rem;
         border-radius: 0.5rem;
       }
+
+      /* Animations personnalisées */
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .animate-fade-in {
+        animation: fadeIn 0.5s ease-out;
+      }
     </style>
   </head>
-  <body class="bg-slate-50 text-slate-800">
-    <!-- Skip to content (accessibilité) -->
+  <body class="bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50 text-slate-800 antialiased">
+    <!-- Skip to content -->
     <a href="#main-content" class="skip-to-content">
       Aller au contenu principal
     </a>
-    
+
     {% set is_auth = request.session.get('uid') is not none %}
 
-    <!-- Header avec navigation structurée -->
-    <header class="bg-white border-b border-slate-200" role="banner">
-      <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-        <a href="{{ '/ui/projects' if is_auth else '/' }}" 
-           class="font-semibold text-slate-900 flex items-center gap-2"
-           aria-label="Retour à l'accueil">
-          <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-          </svg>
-          <span>PPSPS Generator</span>
-        </a>
-        
-        {% if is_auth %}
-        <nav class="flex items-center gap-4" role="navigation" aria-label="Navigation principale">
-          <a href="/ui/projects" 
-             class="text-slate-600 hover:text-slate-900 transition-colors"
-             {% if request.url.path.startswith('/ui/projects') %}aria-current="page"{% endif %}>
-            Projets
+    <!-- Header moderne -->
+    <header class="bg-white/80 backdrop-blur-sm border-b border-slate-200/60 sticky top-0 z-40 shadow-sm" role="banner">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+        <div class="flex items-center justify-between">
+          <!-- Logo -->
+          <a href="{{ '/ui/projects' if is_auth else '/' }}"
+             class="flex items-center gap-3 group transition-transform hover:scale-105"
+             aria-label="Retour à l'accueil">
+            <div class="p-2 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg shadow-blue-600/20 group-hover:shadow-blue-600/40 transition-all">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+              </svg>
+            </div>
+            <div>
+              <span class="block text-lg font-bold text-slate-900">PPSPS Generator</span>
+              <span class="block text-xs text-slate-500">Génération intelligente</span>
+            </div>
           </a>
-          <a href="/tokens/shop" 
-             class="text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-1"
-             {% if request.url.path.startswith('/tokens') %}aria-current="page"{% endif %}>
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
-              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"/>
-            </svg>
-            Jetons
-          </a>
-          <form method="post" action="/logout">
-            <button class="text-slate-600 hover:text-slate-900 transition-colors">
-              Déconnexion
-            </button>
-          </form>
-        </nav>
-        {% else %}
-        <nav class="flex items-center gap-3" role="navigation" aria-label="Navigation principale">
-          <a href="/login" class="text-slate-600 hover:text-slate-900 transition-colors">
-            Connexion
-          </a>
-          <a href="/register" 
-             class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-            Créer un compte
-          </a>
-        </nav>
-        {% endif %}
+
+          <!-- Navigation -->
+          {% if is_auth %}
+          <nav class="flex items-center gap-2 sm:gap-3" role="navigation" aria-label="Navigation principale">
+            <a href="/ui/projects"
+               class="flex items-center gap-2 px-4 py-2 rounded-lg transition-all font-medium {{ 'bg-blue-50 text-blue-700' if request.url.path.startswith('/ui/projects') else 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}"
+               {% if request.url.path.startswith('/ui/projects') %}aria-current="page"{% endif %}>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+              </svg>
+              <span class="hidden sm:inline">Projets</span>
+            </a>
+            <a href="/tokens/shop"
+               class="flex items-center gap-2 px-4 py-2 rounded-lg transition-all font-medium {{ 'bg-blue-50 text-blue-700' if request.url.path.startswith('/tokens') else 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}"
+               {% if request.url.path.startswith('/tokens') %}aria-current="page"{% endif %}>
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"/>
+              </svg>
+              <span class="hidden sm:inline">Jetons</span>
+            </a>
+            <form method="post" action="/logout" class="inline">
+              <button class="flex items-center gap-2 px-4 py-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition-all font-medium">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                </svg>
+                <span class="hidden sm:inline">Déconnexion</span>
+              </button>
+            </form>
+          </nav>
+          {% else %}
+          <nav class="flex items-center gap-3" role="navigation" aria-label="Navigation principale">
+            <a href="/login" class="px-4 py-2 text-slate-600 hover:text-slate-900 font-medium transition-colors">
+              Connexion
+            </a>
+            <a href="/register"
+               class="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 font-medium shadow-lg shadow-blue-600/30 hover:shadow-blue-600/50 transition-all">
+              Créer un compte
+            </a>
+          </nav>
+          {% endif %}
+        </div>
       </div>
     </header>
 
     <!-- Main content -->
-    <main id="main-content" class="max-w-6xl mx-auto p-4" role="main">
+    <main id="main-content" class="animate-fade-in" role="main">
       {% block content %}{% endblock %}
     </main>
 
     <!-- Footer -->
-    <footer class="max-w-6xl mx-auto px-4 py-6 mt-12 border-t border-slate-200 text-center text-sm text-slate-500">
-      © {{ now().year if now else '2025' }} PPSPS Generator – Tous droits réservés
+    <footer class="bg-white/60 backdrop-blur-sm border-t border-slate-200/60 py-6 mt-12">
+      <div class="max-w-7xl mx-auto px-4 text-center text-sm text-slate-600">
+        © {{ now().year if now else '2025' }} PPSPS Generator – Tous droits réservés
+      </div>
     </footer>
 
     <!-- Loading overlay -->
     <div id="loading-overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur" role="alert" aria-live="polite">
-      <div class="flex flex-col items-center gap-3">
-        <svg xmlns="http://www.w3.org/2000/svg" class="animate-spin" width="42" height="42" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3" opacity="0.25"/>
-          <path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+      <div class="flex flex-col items-center gap-3 bg-white rounded-2xl shadow-2xl p-8 border border-slate-200">
+        <svg class="animate-spin h-10 w-10 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
-        <p class="text-sm text-slate-700">Chargement…</p>
+        <p class="text-sm font-medium text-slate-700">Chargement en cours...</p>
       </div>
     </div>
-    
+
     <script>
       (function () {
         const overlay = document.getElementById('loading-overlay');
@@ -158,5 +201,7 @@
         window.addEventListener('pageshow', hide);
       })();
     </script>
+
+    {% block scripts %}{% endblock %}
   </body>
 </html>
