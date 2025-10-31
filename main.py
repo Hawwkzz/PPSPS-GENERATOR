@@ -1,4 +1,4 @@
-﻿# app/main.py — FREEFORM PPSPS (Markdown → DOCX), no placeholders
+# app/main.py — FREEFORM PPSPS (Markdown → DOCX), no placeholders
 from __future__ import annotations
 
 # ===== Stdlib =====
@@ -9,7 +9,7 @@ from urllib.parse import unquote
 from datetime import datetime, date
 from typing import Optional, Literal
 import csv
-from docx.shared import Pt, Inches
+from docx.shared import Pt, Inches, RGBColor
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -759,8 +759,9 @@ def _img_to_data_url(path: str) -> str:
     return f"data:{mime};base64,{b64}"
 
 IMG_RANKER_SYSTEM = (
-    "Tu es un coordonnateur SPS. Tu reçois des images extraites de pièces (PGC, plans...). "
-    "Objectif: décider si chaque image est pertinente pour un PPSPS et où l'insérer."
+    "Tu es un coordonnateur SPS expert. Tu reçois des images extraites de pièces (PGC, plans...). "
+    "Objectif: décider si chaque image est RÉELLEMENT pertinente pour un PPSPS et où l'insérer. "
+    "ATTENTION : REJETTE IMPITOYABLEMENT les templates, fonds de page, logos, cadres vides."
 )
 
 IMG_RANKER_USER_TEMPLATE = """\
@@ -777,22 +778,40 @@ Analyse les images et renvoie un JSON strict, liste d'objets:
   }}
 ]
 
-Règles de tri (strict) :
-- GARDER UNIQUEMENT si l’image apporte un contenu métier exploitable pour le PPSPS.
-- EXCLURE : couvertures, sommaires, logos/filigranes, en-têtes/pieds, cadres/gabarits, snapshots de page entière, pages très textuelles sans schéma/pictogrammes utiles, pages vides.
-- DÉDUPLIQUER : si deux images sont quasi identiques, ne garder que la plus lisible.
-- LIMITE : max 2 images par catégorie et par document (privilégier lisibilité/résolution/contraste).
-- Catégories :
-  * plan_circulation (PICH) → Annexe A + insertion dans section "Installations / Circulation"
-  * plan_levage → Annexe B + insertion dans "Modes opératoires / Levage"
-  * plan_reseaux (DICT/DT) → Annexe C (corps = renvoi seulement)
-  * securite_secours (évacuation/DAE) → insertion dans "Organisation des secours"
-  * chimique_fds (CLP/FDS) → Annexe D (corps = liste produits + renvoi)
-  * autres : keep=false sauf si indispensable
-Seuil: keep=true seulement si confidence ≥ 0.75.
-Réponds UNIQUEMENT le JSON, sans texte autour.
+**RÈGLES DE TRI ULTRA-STRICTES** :
 
-Contexte projet (utile si lisible dans l'image): {context}
+🚫 **REJETER SYSTÉMATIQUEMENT (keep=false)** :
+- Couvertures, pages de garde, sommaires
+- Logos, filigranes, en-têtes/pieds de page
+- Cadres vides, gabarits, templates de mise en page
+- Fonds décoratifs sans contenu technique
+- Pages avec uniquement du texte (pas de schéma/plan)
+- Snapshots de pages entières sans zoom sur un élément précis
+- Images floues, illisibles ou de trop faible résolution
+- Doublons ou images quasi-identiques
+
+✅ **GARDER UNIQUEMENT (keep=true)** si **TOUS** ces critères :
+1. Contenu technique EXPLOITABLE (plan, schéma, pictogramme, diagramme)
+2. Lisibilité EXCELLENTE (texte/légendes lisibles, contraste suffisant)
+3. Pertinence DIRECTE pour la sécurité/prévention du chantier
+4. Pas de doublon avec une image déjà gardée
+5. Confidence ≥ 0.80 (sinon rejeter)
+
+**LIMITES STRICTES** :
+- Maximum 2 images par catégorie (choisir les 2 meilleures)
+- Si doute sur l'utilité : REJETER (principe de précaution)
+
+**Catégories** :
+- plan_circulation (PICH) → Annexe A + insertion section "Circulation"
+- plan_levage → Annexe B + insertion section "Levage"
+- plan_reseaux (DICT/DT) → Annexe C (mention seulement dans corps)
+- securite_secours (évacuation/DAE) → insertion section "Secours"
+- chimique_fds (CLP/FDS) → Annexe D (liste produits + renvoi)
+- autres : rejeter sauf si indispensable (confidence ≥ 0.90)
+
+Contexte projet : {context}
+
+**RAPPEL** : Sois IMPITOYABLE. Mieux vaut 0 image que des templates inutiles.
 """
 
 PEEK_SYSTEM = (
@@ -885,8 +904,20 @@ def _rank_images_with_vision(session: Session, project_id: int, max_per_batch: i
     candidates = []
     for r in imgs:
         try:
-            if os.path.getsize(r.stored_path) < 20_000:  # >40KB
+            if os.path.getsize(r.stored_path) < 50_000:  # >50KB
                 continue
+            
+            # Vérifier dimensions minimales
+            from PIL import Image
+            with Image.open(r.stored_path) as im:
+                w, h = im.size
+                # Au moins 400x400 pixels
+                if w < 400 or h < 400:
+                    continue
+                # Ratio trop bizarre = probable template
+                ratio = max(w, h) / min(w, h)
+                if ratio > 4:  # Trop allongé
+                    continue
         except Exception:
             continue
         candidates.append(r)
@@ -925,7 +956,7 @@ def _rank_images_with_vision(session: Session, project_id: int, max_per_batch: i
             continue
 
     # borne par catégorie (évite le spam)
-    caps = {"plan_circulation": 5, "plan_levage": 5, "plan_reseaux": 8, "securite_secours": 3, "chimique_fds": 5, "autres": 3}
+    caps = {"plan_circulation": 2, "plan_levage": 2, "plan_reseaux": 3, "securite_secours": 2, "chimique_fds": 3, "autres": 1}
     counts = {k:0 for k in caps}
     shortlisted = []
     for r in results:
@@ -1006,6 +1037,63 @@ def get_document(doc_id: int, session: Session = Depends(get_session)):
         raise HTTPException(status_code=404, detail="Document not found")
     return doc
 
+
+def _add_cover_page(doc, project_name: str, project_address: str):
+    """
+    Ajoute une belle page de garde au début du document.
+    """
+    # Paragraphe vide pour espacer
+    doc.add_paragraph()
+    doc.add_paragraph()
+    doc.add_paragraph()
+    
+    # TITRE PRINCIPAL
+    title = doc.add_paragraph()
+    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = title.add_run("PPSPS")
+    run.font.size = Pt(48)
+    run.font.bold = True
+    run.font.color.rgb = RGBColor(37, 99, 235)  # Bleu
+    
+    # SOUS-TITRE
+    subtitle = doc.add_paragraph()
+    subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = subtitle.add_run("Plan Particulier de Sécurité et de Protection de la Santé")
+    run.font.size = Pt(18)
+    run.font.color.rgb = RGBColor(100, 116, 139)  # Gris
+    
+    doc.add_paragraph()
+    doc.add_paragraph()
+    
+    # PROJET
+    project_para = doc.add_paragraph()
+    project_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = project_para.add_run(f"Projet : {project_name}")
+    run.font.size = Pt(20)
+    run.font.bold = True
+    
+    # ADRESSE
+    addr_para = doc.add_paragraph()
+    addr_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = addr_para.add_run(project_address)
+    run.font.size = Pt(14)
+    run.font.color.rgb = RGBColor(100, 116, 139)
+    
+    doc.add_paragraph()
+    doc.add_paragraph()
+    doc.add_paragraph()
+    
+    # DATE
+    date_para = doc.add_paragraph()
+    date_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = date_para.add_run(f"Document généré le {datetime.now().strftime('%d/%m/%Y')}")
+    run.font.size = Pt(11)
+    run.font.italic = True
+    
+    # SAUT DE PAGE
+    doc.add_page_break()
+
+
 @app.get("/documents/{doc_id}/export_docx")
 def export_docx_by_id(doc_id: int, session: Session = Depends(get_session), user: UserDB = Depends(require_login)):
     doc = ensure_doc_is_owned(doc_id, user, session)
@@ -1013,6 +1101,13 @@ def export_docx_by_id(doc_id: int, session: Session = Depends(get_session), user
     # à partir de la création du DocxDocument jusqu'au StreamingResponse)
     d = DocxDocument()
     _build_doc_styles(d)
+
+    # Récupérer le projet pour la page de garde
+    proj = session.get(ProjectDB, doc.project_id)
+    
+    # ✅ AJOUT PAGE DE GARDE
+    _add_cover_page(d, proj.name, proj.address)
+    
     segments = _split_text_and_tables(doc.content_md or "")
     project_img_dir = os.path.join("uploads", str(doc.project_id), "images")
     img_lookup = _image_lookup_for_project(session, doc.project_id)
@@ -1026,9 +1121,9 @@ def export_docx_by_id(doc_id: int, session: Session = Depends(get_session), user
     section = d.sections[-1]
     footer = section.footer
     p = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
-    p.text = "PPSPS - " + datetime.now().strftime("%Y-%m-%d %H:%M")
+    p.text = f"PPSPS - {proj.name} - Généré le {datetime.now().strftime('%d/%m/%Y %H:%M')}"
     bio = BytesIO(); d.save(bio); bio.seek(0)
-    filename = f"{doc.doc_type.lower()}_{doc.id}.docx"
+    filename = f"PPSPS_{proj.name.replace(' ', '_')}_{doc.version}.docx"
     headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
     return StreamingResponse(bio, media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document", headers=headers)
 
@@ -1385,20 +1480,34 @@ def _row_cant_split(row):
     trPr.append(cant)
 
 def _format_table_pretty(tbl, header_fill=True):
+    """Version améliorée avec couleurs."""
     tbl.alignment = WD_TABLE_ALIGNMENT.LEFT
-    # en-tête gras + fond gris clair
+    
+    # En-tête avec fond bleu
     if len(tbl.rows) > 0:
         for j, cell in enumerate(tbl.rows[0].cells):
             for p in cell.paragraphs:
                 for run in p.runs:
                     run.bold = True
+                    run.font.color.rgb = RGBColor(255, 255, 255)  # Texte blanc
             if header_fill:
                 tcPr = cell._tc.get_or_add_tcPr()
                 shd = OxmlElement('w:shd')
                 shd.set(qn('w:val'), 'clear')
-                shd.set(qn('w:fill'), 'D9D9D9')  # gris clair
+                shd.set(qn('w:fill'), '2563EB')  # Bleu
                 tcPr.append(shd)
-    # anti-coupure lignes
+    
+    # Lignes alternées (gris très clair)
+    for i, row in enumerate(tbl.rows[1:], start=1):
+        if i % 2 == 0:
+            for cell in row.cells:
+                tcPr = cell._tc.get_or_add_tcPr()
+                shd = OxmlElement('w:shd')
+                shd.set(qn('w:val'), 'clear')
+                shd.set(qn('w:fill'), 'F8FAFC')  # Gris très clair
+                tcPr.append(shd)
+    
+    # Anti-coupure lignes
     for r in tbl.rows:
         _row_cant_split(r)
 
@@ -1563,6 +1672,10 @@ def _prompt_freeform_ppsps(meta_hint: dict, evidence_pack: str, img_catalog: lis
     Construit les messages pour l'appel modèle (chat.completions).
     """
     TRAME_MD = """\
+# PPSPS — PLAN PARTICULIER DE SÉCURITÉ ET DE PROTECTION DE LA SANTÉ
+
+---
+
 # 1. Informations générales
 ## 1.1 Affaire
 ## 1.2 Chantier
@@ -1589,38 +1702,126 @@ def _prompt_freeform_ppsps(meta_hint: dict, evidence_pack: str, img_catalog: lis
 """
 
     RULES = f"""
-Tu es **rédacteur PPSPS**.
-Objectif : produire un **PPSPS complet en français**, **au format Markdown**, qui respecte **strictement** la trame ci-dessous (titres, numéros, libellés exacts).
+Tu es **rédacteur PPSPS expert**.
+Objectif : produire un **PPSPS complet en français**, **au format Markdown**, qui respecte **strictement** la trame ci-dessous.
 
-**Règles générales**
-- Priorité stricte : les **PIÈCES UPLOADÉES** priment sur le **formulaire**.
-- Si une info est introuvable : mets _À compléter_ à l'endroit exact.
-- Interdictions : ne change PAS les titres/numéros, n’ajoute PAS de sections non listées, n’invente PAS de données.
-- Style : factuel, concis. Traçabilité douce possible (source : fichier).
+🚨 **RÈGLE ABSOLUE N°1 — PRIORITÉ DES SOURCES** 🚨
+1. **TOUJOURS utiliser EN PRIORITÉ les informations des PIÈCES UPLOADÉES** (extraits fournis ci-dessous)
+2. Le **formulaire** sert UNIQUEMENT de **FALLBACK** si l'info est absente des pièces
+3. Si une entreprise/date/coordonnée est trouvée dans les pièces, **IGNORE TOTALEMENT le formulaire**
+4. Exemple concret :
+   - Pièces : "Entreprise MARTIN SARL, 123 rue de la Paix, contact@martin.fr"
+   - Formulaire : "Entreprise A"
+   - ✅ UTILISE : Entreprise MARTIN SARL
+   - ❌ N'UTILISE PAS : Entreprise A
 
-**TABLEAUX — OBLIGATOIRE (format CSV balisé)**
-Pour chaque tableau listé ci-dessous, tu dois produire un bloc EXACTEMENT au format :
+**Structure & Style**
+- Respecte les titres/numéros EXACTS de la trame (ne change rien)
+- Si une info est introuvable : mets _À compléter_ à l'endroit précis
+- Style : factuel, professionnel, concis
+- Pas d'inventions : utilise uniquement les données réelles
+
+**TABLEAUX — FORMAT CSV OBLIGATOIRE**
+Pour chaque tableau, utilise EXACTEMENT ce format :
 
 [TABLE:<Nom de section>]
 "Col1";"Col2";"Col3"
-"…";"…";"…"
+"données";"données";"données"
 [/TABLE]
 
-- Utilise **le point-virgule `;` comme séparateur** et **des guillemets `"` autour de chaque cellule**.
-- Mets une ligne _À compléter_ si tu n'as pas l'info.
-- Les tableaux requis (en-têtes EXACTS) sont :
+- Point-virgule `;` comme séparateur
+- Guillemets `"` autour de chaque cellule
+- Si info manquante : "_À compléter";"";""
+
+Tableaux requis (en-têtes EXACTS) :
   [TABLE:1.3 Acteurs & coordonnées] "Acteur";"Société";"Nom";"Email";"Téléphone" [/TABLE]
   [TABLE:1.4 Planning] "Phase";"Activité";"Pré-requis";"Début";"Fin";"Responsable" [/TABLE]
-  [TABLE:1.5 Effectifs] "Corps d’état";"Effectif max";"Habilitations";"Période" [/TABLE]
+  [TABLE:1.5 Effectifs] "Corps d'état";"Effectif max";"Habilitations";"Période" [/TABLE]
   [TABLE:1.6 Sous-traitants] "Entreprise";"Lot";"Responsable";"Contact";"Effectif";"Période";"Docs CSPS" [/TABLE]
   [TABLE:1.6 Matériel] "Matériel";"Caractéristiques";"VGP/Docs";"Responsable";"Période" [/TABLE]
   [TABLE:4. Prévention / EPI / Risques] "Risque";"Gravité";"Probabilité";"Criticité initiale";"Mesures";"Criticité résiduelle" [/TABLE]
   [TABLE:5. Secours & évacuation] "Rôle";"Qui";"Contact";"Back-up" [/TABLE]
   [TABLE:6. Mise à jour / révisions du PPSPS] "Index";"Date";"Motif";"Sections impactées";"Diffusion effectuée" [/TABLE]
 
+**INSERTION D'IMAGES — RÈGLES STRICTES**
+
+✅ **Images dans le CORPS du document** :
+- Section "Secours & évacuation" : 1 plan évacuation [cat=securite_secours]
+  Format : **Figure 1 — Plan d'évacuation Zone X**
+  Légende : Points de rassemblement, issues, DAE | Source: [fichier] | Date: [si dispo]
+  [IMAGE:nom_fichier.png]
+
+- Section "Organisation / Circulation" : 1 PICH [cat=plan_circulation]
+  Format : **Figure 2 — Plan d'installation de chantier (PICH)**
+  Légende : Accès, zones stockage, balisage | Source: [fichier]
+  [IMAGE:nom_fichier.png]
+  _(Voir Annexe A pour plans détaillés)_
+
+- Section "Modes opératoires / Levage" : 1 schéma [cat=plan_levage]
+  Format : **Figure 3 — Schéma de levage / Zone de grutage**
+  Légende : Rayons, zones interdites | Source: [fichier]
+  [IMAGE:nom_fichier.png]
+  _(Voir Annexe B pour détails)_
+
+- Section "Réseaux" : PAS D'IMAGE, seulement texte :
+  "Les prescriptions DICT/DT ont été intégrées. Voir plans réseaux en Annexe C."
+
+- Section "Risques chimiques" : PAS D'IMAGE, seulement texte :
+  "Produits employés : [liste]. Voir FDS complètes en Annexe D."
+
+📎 **ANNEXES (À LA FIN DU DOCUMENT)** :
+
+# Annexes
+
+## Annexe A — Plans de circulation et PICH
+
+[IMAGE:pich_1.png]
+**Plan PICH — Vue générale**
+Source: [fichier] | Date: [date]
+
+[IMAGE:pich_2.png]
+**Plan circulation — Phase 2**
+Source: [fichier] | Date: [date]
+
+_(Insérer TOUTES les images [cat=plan_circulation] ici, PAS de "à compléter")_
+
+## Annexe B — Plans de levage et manutention
+
+[IMAGE:levage_1.png]
+**Schéma grutage — Portée et zones**
+Source: [fichier] | Date: [date]
+
+_(Insérer TOUTES les images [cat=plan_levage] ici)_
+
+## Annexe C — Plans de réseaux (DICT/DT)
+
+[IMAGE:dict_1.png]
+**Plan réseaux enterrés — Zone Nord**
+Source: [fichier] | Date: [date]
+
+_(Insérer TOUTES les images [cat=plan_reseaux] ici)_
+
+## Annexe D — Fiches de Données de Sécurité (FDS)
+
+[IMAGE:fds_1.png]
+**FDS — Produit XYZ**
+Source: [fichier]
+
+_(Insérer TOUTES les images [cat=chimique_fds] ici)_
+
+## Annexe E — Documents complémentaires
+
+_(VGP, rapports échafaudages, etc. si disponibles)_
+
+🚨 **RÈGLES FINALES** :
+- Si une catégorie d'annexe n'a AUCUNE image : écrire "_Aucun document fourni — À compléter_"
+- NE JAMAIS laisser une annexe vide si des images existent pour cette catégorie
+- Utiliser STRICTEMENT les balises [IMAGE:filename] fournies dans le catalogue
+- Ne pas inventer de noms de fichiers
+
 **Modes opératoires**
-- Si des MOs sont détectés dans les extraits candidats, réécris-les proprement (Étapes numérotées, EPI, Prévention, Points de contrôle).
-- Sinon, insère des MOs standards issus de la KB interne (fallback disponible = {kb_fallback_present}).
+- Si MOs détectés dans extraits : les réécrire proprement (Étapes, EPI, Prévention, Points de contrôle)
+- Sinon : insérer MOs standards issus de la KB interne (fallback = {kb_fallback_present})
 """
 
 
@@ -1628,9 +1829,12 @@ Pour chaque tableau listé ci-dessous, tu dois produire un bloc EXACTEMENT au fo
     messages = [
         {"role": "system", "content": "Tu es un expert prévention SPS qui rédige des PPSPS conformes et rigoureux."},
         {"role": "user", "content":
-            f"{RULES}\n\n### TRAME À RESPECTER (NE RIEN MODIFIER)\n{TRAME_MD}\n\n"
-            f"### PIÈCES (EXTRAITS STRUCTURÉS)\n{evidence_pack}\n\n"
-            f"### FORMULAIRE (SECOURS UNIQUEMENT)\n{json.dumps(meta_hint, ensure_ascii=False)}"
+            f"{RULES}\n\n"
+            f"### TRAME À RESPECTER (NE RIEN MODIFIER)\n{TRAME_MD}\n\n"
+            f"### 📄 PIÈCES UPLOADÉES (PRIORITÉ ABSOLUE)\n{evidence_pack}\n\n"
+            f"### 📝 FORMULAIRE (FALLBACK UNIQUEMENT)\n{json.dumps(meta_hint, ensure_ascii=False, indent=2)}\n\n"
+            f"### 🖼️ CATALOGUE D'IMAGES DISPONIBLES\n{json.dumps(img_catalog, ensure_ascii=False, indent=2)}\n\n"
+            f"Maintenant, génère le PPSPS complet en respectant STRICTEMENT toutes les règles ci-dessus."
             f"\n\n### IMAGE_CATALOG (images disponibles)\n"
             f"{json.dumps(img_catalog, ensure_ascii=False)}\n"
             f"\n\n### RÈGLES D’INSERTION D’IMAGES (Mise à jour complète)\n"
