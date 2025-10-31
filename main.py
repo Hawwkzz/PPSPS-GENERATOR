@@ -645,7 +645,12 @@ Règles :
             ]
         )
         
-        raw = response.choices[0].message.content.strip()
+        raw = (response.choices[0].message.content or "").strip()
+        
+        # Vérifier si la réponse est vide
+        if not raw:
+            logger.warning("[RELEVANCE] Réponse vide de l'IA - autorisation par défaut")
+            return True, ""
         
         # Nettoyer les éventuels backticks markdown
         raw = raw.replace('```json', '').replace('```', '').strip()
@@ -2087,8 +2092,18 @@ def generate_ppsps_freeform(project_id: int, session: Session = Depends(get_sess
             messages=messages,
         )
         md = (resp.choices[0].message.content or "").strip()
-    except Exception :
-        raise HTTPException(status_code=502, detail="Génération indisponible pour le moment.")
+        if not md:
+            logger.error("[PPSPS] Réponse vide de l'API lors de la génération")
+            # Rembourser le jeton
+            TokenService.refund_token(session, user.id, project_id, "Génération échouée : réponse vide")
+            raise HTTPException(status_code=502, detail="Génération impossible : réponse vide de l'IA. Le jeton a été remboursé.")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[PPSPS] Erreur lors de la génération : {type(e).__name__} - {str(e)}")
+        # Rembourser le jeton
+        TokenService.refund_token(session, user.id, project_id, f"Génération échouée : {type(e).__name__}")
+        raise HTTPException(status_code=502, detail=f"Génération impossible pour le moment. Le jeton a été remboursé. Erreur: {type(e).__name__}")
 
     # Si pas de contenus MO détectés et que la section 3 est vide => injecter fallback KB
     needs_kb_fallback = "3. Modes opératoires" in md and re.search(r"#\s*3\.\s*Modes opératoires\s*(?:\n|\r\n)(?!#)", md) and ("Étapes" not in md and "EPI" not in md)
