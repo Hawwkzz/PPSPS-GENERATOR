@@ -645,12 +645,7 @@ Règles :
             ]
         )
         
-        raw = (response.choices[0].message.content or "").strip()
-        
-        # Vérifier si la réponse est vide
-        if not raw:
-            logger.warning("[RELEVANCE] Réponse vide de l'IA - autorisation par défaut")
-            return True, ""
+        raw = response.choices[0].message.content.strip()
         
         # Nettoyer les éventuels backticks markdown
         raw = raw.replace('```json', '').replace('```', '').strip()
@@ -1713,16 +1708,10 @@ Objectif : produire un **PPSPS complet en français**, **au format Markdown**, q
 🚨 **RÈGLE ABSOLUE N°1 — PRIORITÉ DES SOURCES** 🚨
 1. **TOUJOURS utiliser EN PRIORITÉ les informations des PIÈCES UPLOADÉES** (extraits fournis ci-dessous)
 2. Le **formulaire** sert UNIQUEMENT de **FALLBACK** si l'info est absente des pièces
-3. Si une entreprise/date/coordonnée est trouvée dans les pièces, **IGNORE TOTALEMENT le formulaire**
-4. Exemple concret :
-   - Pièces : "Entreprise MARTIN SARL, 123 rue de la Paix, contact@martin.fr"
-   - Formulaire : "Entreprise A"
-   - ✅ UTILISE : Entreprise MARTIN SARL
-   - ❌ N'UTILISE PAS : Entreprise A
-
+3. Si une entreprise/date/coordonnée est trouvée dans les pièces, ajoute la en plus des entreprises inscrites dans le formulaire sauf si tu reconnais le même nom d'entreprises.
 **Structure & Style**
 - Respecte les titres/numéros EXACTS de la trame (ne change rien)
-- Si une info est introuvable : mets _À compléter_ à l'endroit précis
+- Si une info est introuvable : laisse vide
 - Style : factuel, professionnel, concis
 - Pas d'inventions : utilise uniquement les données réelles
 
@@ -1736,7 +1725,7 @@ Pour chaque tableau, utilise EXACTEMENT ce format :
 
 - Point-virgule `;` comme séparateur
 - Guillemets `"` autour de chaque cellule
-- Si info manquante : "_À compléter";"";""
+- Si info manquante : laisse vide
 
 Tableaux requis (en-têtes EXACTS) :
   [TABLE:1.3 Acteurs & coordonnées] "Acteur";"Société";"Nom";"Email";"Téléphone" [/TABLE]
@@ -1826,7 +1815,7 @@ _(VGP, rapports échafaudages, etc. si disponibles)_
 
 **Modes opératoires**
 - Si MOs détectés dans extraits : les réécrire proprement (Étapes, EPI, Prévention, Points de contrôle)
-- Sinon : insérer MOs standards issus de la KB interne (fallback = {kb_fallback_present})
+- Sinon, les déduire des travaux à réaliser
 """
 
 
@@ -2029,50 +2018,27 @@ def generate_ppsps_freeform(project_id: int, session: Session = Depends(get_sess
 
 
     
-    # 1) tri vision (si modèle vision disponible)
-    shortlisted = []
-    try:
-        shortlisted = _rank_images_with_vision(session, project_id)
-    except Exception:
-        shortlisted = []
-    if not _model_supports_vision():
-       logger.warning("[IMG] ⚠️ Aucun modèle vision détecté — tri IA ignoré, fallback désactivé.")
-
-    if shortlisted:
-      kept = [x["filename"] for x in shortlisted if x.get("keep")]
-      logger.info(f"[IMG] Tri IA : {len(kept)} image(s) retenue(s) → {kept}")
-    else:
-      logger.info("[IMG] Tri IA terminé : 0 image retenue")
-  
-
-    # 2) on convertit ça en "image_catalog" propre (seulement keep=True)
-    img_catalog = []
-    for r in shortlisted:
-        # retrouve le stored_path depuis DB (sécurisé)
-        att = session.exec(
-            select(AttachmentDB).where(
-                AttachmentDB.project_id == project_id,
-                AttachmentDB.filename == r.get("filename")
-            )
-        ).first()
-        if not att: 
-            continue
-        tag_map = {
-            "plan_circulation": "plan_circulation",
-            "plan_levage": "plan_levage",
-            "plan_reseaux": "plan_reseaux",
-            "securite_secours": "securite_secours",
-            "chimique_fds": "chimique_fds",
-            "autres": "other"
+    
+    # Récupération SIMPLE de toutes les images (pas de tri IA)
+    all_images = session.exec(
+        select(AttachmentDB).where(
+            AttachmentDB.project_id == project_id,
+            AttachmentDB.mime_type.like("image%")
+        ).order_by(AttachmentDB.created_at.asc())
+    ).all()
+    
+    img_catalog = [
+        {
+            "file": img.filename,
+            "stored_path": img.stored_path,
+            "size": img.size_bytes
         }
-        img_catalog.append({
-            "file": att.filename,
-            "stored_path": att.stored_path,
-            "tags": [tag_map.get(r.get("category"), "other")],
-            "suggested_location": r.get("suggested_location"),
-            "caption": r.get("caption"),
-            "confidence": r.get("confidence", 0.0)
-        })
+        for img in all_images
+    ]
+    
+    logger.info(f"[IMG] {len(img_catalog)} images disponibles pour le projet {project_id}")
+    if img_catalog:
+        logger.info(f"[IMG] Liste : {', '.join([i['file'] for i in img_catalog])}")
 
 # Evidence depuis les pièces
     blob = _project_text_blob(session, project_id, limit_chars=80_000)
@@ -2092,18 +2058,23 @@ def generate_ppsps_freeform(project_id: int, session: Session = Depends(get_sess
             messages=messages,
         )
         md = (resp.choices[0].message.content or "").strip()
-        if not md:
-            logger.error("[PPSPS] Réponse vide de l'API lors de la génération")
-            # Rembourser le jeton
-            TokenService.refund_token(session, user.id, project_id, "Génération échouée : réponse vide")
-            raise HTTPException(status_code=502, detail="Génération impossible : réponse vide de l'IA. Le jeton a été remboursé.")
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"[PPSPS] Erreur lors de la génération : {type(e).__name__} - {str(e)}")
-        # Rembourser le jeton
-        TokenService.refund_token(session, user.id, project_id, f"Génération échouée : {type(e).__name__}")
-        raise HTTPException(status_code=502, detail=f"Génération impossible pour le moment. Le jeton a été remboursé. Erreur: {type(e).__name__}")
+        
+        # Logs de qualité du document généré
+        logger.info(f"[PPSPS] Document généré : {len(md)} caractères")
+        logger.info(f"[PPSPS] Balises [IMAGE:] trouvées : {md.count('[IMAGE:')}")
+        logger.info(f"[PPSPS] Tableaux [TABLE:] trouvés : {md.count('[TABLE:')}")
+        
+        # Vérifier cohérence images
+        expected_images = len(img_catalog)
+        actual_images = md.count("[IMAGE:")
+        if expected_images > 0:
+            ratio = (actual_images / expected_images) * 100
+            if ratio < 30:
+                logger.warning(f"[PPSPS] WARNING Seulement {actual_images}/{expected_images} images insérées ({ratio:.0f}%)")
+            else:
+                logger.info(f"[PPSPS] OK {actual_images}/{expected_images} images insérées ({ratio:.0f}%)")
+    except Exception :
+        raise HTTPException(status_code=502, detail="Génération indisponible pour le moment.")
 
     # Si pas de contenus MO détectés et que la section 3 est vide => injecter fallback KB
     needs_kb_fallback = "3. Modes opératoires" in md and re.search(r"#\s*3\.\s*Modes opératoires\s*(?:\n|\r\n)(?!#)", md) and ("Étapes" not in md and "EPI" not in md)
