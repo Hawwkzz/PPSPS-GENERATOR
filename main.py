@@ -1222,7 +1222,7 @@ def _ensure_annexes_with_images(md: str, img_catalog: list[dict]) -> str:
             for f in imgs:
                 annexes_lines.append(f"[IMAGE:{f}]")
         else:
-            annexes_lines.append("_À compléter_")
+            annexes_lines.append("Aucun document fourni")
 
     return (md or "") + "\n" + "\n".join(annexes_lines) + "\n"
 
@@ -1280,6 +1280,8 @@ def ingest_project_files(project_id: int, session: Session = Depends(get_session
 
 def _docx_add_heading_or_paragraph(doc, line: str):
     s = line.strip()
+    if not s:  # Skip les lignes vides
+        return
     if s.startswith("# "):
         txt = s[2:].strip()
         # saut de page si H1 numéroté >= 2
@@ -1291,6 +1293,8 @@ def _docx_add_heading_or_paragraph(doc, line: str):
         doc.add_heading(s[3:].strip(), level=2)
     elif s.startswith("### "):
         doc.add_heading(s[4:].strip(), level=3)
+    elif s == "---":  # Skip les séparateurs markdown
+        return
     else:
         doc.add_paragraph(line)
 
@@ -1439,38 +1443,40 @@ def _render_modes_ops_from_kb(project: ProjectDB) -> str:
 
 
 def _build_doc_styles(doc):
-    # police/parag défaut
+    # police/parag défaut - Aptos moderne et lisible
     styles = doc.styles
     normal = styles["Normal"]
-    normal.font.name = "Calibri"
+    normal.font.name = "Aptos"
     normal.font.size = Pt(11)
     normal.paragraph_format.line_spacing = 1.15
     normal.paragraph_format.space_before = Pt(0)
-    normal.paragraph_format.space_after = Pt(6)
+    normal.paragraph_format.space_after = Pt(4)
 
     # H1
     h1 = styles["Heading 1"]
-    h1.font.name = "Calibri"
-    h1.font.size = Pt(16)
+    h1.font.name = "Aptos"
+    h1.font.size = Pt(18)
     h1.font.bold = True
+    h1.font.color.rgb = RGBColor(31, 73, 125)  # Bleu foncé pro
     h1.paragraph_format.space_before = Pt(12)
     h1.paragraph_format.space_after = Pt(6)
 
     # H2
     h2 = styles["Heading 2"]
-    h2.font.name = "Calibri"
-    h2.font.size = Pt(13)
+    h2.font.name = "Aptos"
+    h2.font.size = Pt(14)
     h2.font.bold = True
-    h2.paragraph_format.space_before = Pt(10)
+    h2.font.color.rgb = RGBColor(31, 73, 125)
+    h2.paragraph_format.space_before = Pt(8)
     h2.paragraph_format.space_after = Pt(4)
 
     # H3
     h3 = styles["Heading 3"]
-    h3.font.name = "Calibri"
-    h3.font.size = Pt(11)
+    h3.font.name = "Aptos"
+    h3.font.size = Pt(12)
     h3.font.bold = True
-    h3.paragraph_format.space_before = Pt(8)
-    h3.paragraph_format.space_after = Pt(4)
+    h3.paragraph_format.space_before = Pt(6)
+    h3.paragraph_format.space_after = Pt(3)
 
 def _row_cant_split(row):
     # <w:cantSplit/> sur la ligne => évite coupure sur page
@@ -1537,10 +1543,10 @@ def _maybe_add_images(doc, text_block: str, base_dir: str | None = None, image_l
         if os.path.exists(img_path):
             try:
                 doc.add_picture(img_path, width=Inches(6.5))
-            except Exception:
-                doc.add_paragraph(f"[Image non lisible: {img_ref}]")
+            except Exception as e:
+                logger.warning(f"[IMG] Impossible de lire l'image {img_ref}: {e}")
         else:
-            doc.add_paragraph(f"[Image introuvable: {img_ref}]")
+            logger.warning(f"[IMG] Image introuvable, skippée: {img_ref}")
 
         pos = m.end()
 
@@ -1672,10 +1678,6 @@ def _prompt_freeform_ppsps(meta_hint: dict, evidence_pack: str, img_catalog: lis
     Construit les messages pour l'appel modèle (chat.completions).
     """
     TRAME_MD = """\
-# PPSPS — PLAN PARTICULIER DE SÉCURITÉ ET DE PROTECTION DE LA SANTÉ
-
----
-
 # 1. Informations générales
 ## 1.1 Affaire
 ## 1.2 Chantier
@@ -1769,49 +1771,38 @@ Tableaux requis (en-têtes EXACTS) :
 
 ## Annexe A — Plans de circulation et PICH
 
-[IMAGE:pich_1.png]
+**IMPORTANT** : Utilise UNIQUEMENT les noms de fichiers du catalogue fourni (section IMAGE_CATALOG).
+Si aucune image [cat=plan_circulation] disponible, écrire : "Aucun document fourni"
+
+Exemple de format SI des images existent :
+[IMAGE:nom_reel_du_fichier.png]
 **Plan PICH — Vue générale**
-Source: [fichier] | Date: [date]
-
-[IMAGE:pich_2.png]
-**Plan circulation — Phase 2**
-Source: [fichier] | Date: [date]
-
-_(Insérer TOUTES les images [cat=plan_circulation] ici, PAS de "à compléter")_
+Source: [nom fichier] | Date: [si dispo]
 
 ## Annexe B — Plans de levage et manutention
 
-[IMAGE:levage_1.png]
-**Schéma grutage — Portée et zones**
-Source: [fichier] | Date: [date]
-
-_(Insérer TOUTES les images [cat=plan_levage] ici)_
+Si des images [cat=plan_levage] existent dans le catalogue, les insérer.
+Sinon : "Aucun document fourni"
 
 ## Annexe C — Plans de réseaux (DICT/DT)
 
-[IMAGE:dict_1.png]
-**Plan réseaux enterrés — Zone Nord**
-Source: [fichier] | Date: [date]
-
-_(Insérer TOUTES les images [cat=plan_reseaux] ici)_
+Si des images [cat=plan_reseaux] existent dans le catalogue, les insérer.
+Sinon : "Aucun document fourni"
 
 ## Annexe D — Fiches de Données de Sécurité (FDS)
 
-[IMAGE:fds_1.png]
-**FDS — Produit XYZ**
-Source: [fichier]
-
-_(Insérer TOUTES les images [cat=chimique_fds] ici)_
+Si des images [cat=chimique_fds] existent dans le catalogue, les insérer.
+Sinon : "Aucun document fourni"
 
 ## Annexe E — Documents complémentaires
 
-_(VGP, rapports échafaudages, etc. si disponibles)_
+Laisser vide ou mentionner si VGP/échafaudages fournis.
 
-🚨 **RÈGLES FINALES** :
-- Si une catégorie d'annexe n'a AUCUNE image : écrire "_Aucun document fourni — À compléter_"
-- NE JAMAIS laisser une annexe vide si des images existent pour cette catégorie
-- Utiliser STRICTEMENT les balises [IMAGE:filename] fournies dans le catalogue
-- Ne pas inventer de noms de fichiers
+🚨 **RÈGLES CRITIQUES IMAGES** :
+- N'utilise QUE les noms de fichiers présents dans IMAGE_CATALOG fourni ci-dessous
+- NE PAS inventer de noms comme "pich_1.png", "levage_1.png" etc.
+- Si IMAGE_CATALOG est vide ou n'a pas d'images pour une catégorie → écrire "Aucun document fourni"
+- Format exact : [IMAGE:nom_exact_du_fichier_du_catalogue.png]
 
 **Modes opératoires**
 - Si MOs détectés dans extraits : les réécrire proprement (Étapes, EPI, Prévention, Points de contrôle)
@@ -1872,19 +1863,19 @@ def _delete_project_storage(project_id: int):
 
 def _ensure_sections(md: str) -> str:
     """
-    S'assure que toutes les sections de TRAME_TITLES existent. Ajoute 'À compléter' si manquante.
+    S'assure que toutes les sections de TRAME_TITLES existent. Ajoute le titre si manquant.
     """
     out = md or ""
     for title in TRAME_TITLES:
-        # Convert expected plain titles to Markdown headings used in prompt
         h = title
         if not re.search(re.escape(title.split(" ", 1)[1]) if ". " in title else re.escape(title), out, flags=re.IGNORECASE):
-            # inject a heading with placeholder
-            if title.startswith("1. "): out += f"\n\n# {title}\n_A compléter_\n"
+            # inject just the heading
+            if title.startswith("1. "): 
+                out += f"\n\n# {title}\n"
             elif title.startswith(("2.", "3.", "4.", "5.", "6.", "7.")) and len(title) <= 4+len(title.split('.',1)[1]):
-                out += f"\n\n# {title}\n_A compléter_\n"
+                out += f"\n\n# {title}\n"
             else:
-                out += f"\n\n## {title}\n_A compléter_\n"
+                out += f"\n\n## {title}\n"
     return out
 
 def _normalize_md(md: str) -> str:
@@ -1948,16 +1939,16 @@ def _parse_csv_table(csv_text: str) -> list[list[str]]:
 
 def _ensure_expected_header(section: str, rows: list[list[str]]) -> list[list[str]]:
     """
-    Vérifie l'en-tête; si KO, impose l'en-tête attendu et une ligne '_À compléter_'.
+    Vérifie l'en-tête; si KO, impose l'en-tête attendu et une ligne vide.
     """
     expected = EXPECTED_TABLES.get(section)
     if not expected:
         return rows
     if not rows:
-        return [expected, ["_À compléter_"] + [""]*(len(expected)-1)]
+        return [expected, [""]*(len(expected))]
     header = rows[0]
     if header != expected:
-        return [expected, ["_À compléter_"] + [""]*(len(expected)-1)]
+        return [expected, [""]*(len(expected))]
     return rows
 
 def _docx_add_csv_table(doc, section: str, csv_text: str):
