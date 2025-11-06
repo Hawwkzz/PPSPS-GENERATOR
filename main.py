@@ -2622,9 +2622,10 @@ def generate_ppsps_freeform(project_id: int, session: Session = Depends(get_sess
         next_version = (max([d.version for d in existing]) + 1) if existing else 1
         
         # Sauvegarder le DOCX généré dans un fichier
-        project_dir = _project_upload_dir(project_id)
+        project_dir = _safe_path(UPLOADS_ROOT, _project_upload_dir(project_id))
+        os.makedirs(project_dir, exist_ok=True)
         docx_filename = f"PPSPS_v{next_version}.docx"
-        docx_path = os.path.join(project_dir, docx_filename)
+        docx_path = _safe_path(project_dir, docx_filename)
         filled_doc.save(docx_path)
         
         logger.info(f"[PPSPS] DOCX sauvegardé : {docx_path}")
