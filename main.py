@@ -359,8 +359,10 @@ from pypdf import PdfReader
 from docx import Document as DocxDocument
 
 
-# Chemin du template PPSPS
-TEMPLATE_PATH = "/mnt/user-data/uploads/248234559-modele-PPSPS.docx"
+# Chemin du template PPSPS (relatif au dossier du projet)
+import os as _os
+_current_dir = _os.path.dirname(_os.path.abspath(__file__))
+TEMPLATE_PATH = _os.path.join(_current_dir, "248234559-modele-PPSPS.docx")
 
 # ===== Template Filler (intégré) =====
 """
@@ -863,9 +865,6 @@ Réponds en JSON avec cette structure EXACTE :
         tcPr.append(tcBorders)
 
 
-# Chemin du template PPSPS
-TEMPLATE_PATH = "/mnt/user-data/uploads/248234559-modele-PPSPS.docx"
-
 # ===== App =====
 ENV = os.getenv("ENV", "dev").lower()  # "prod" en production
 HTTPS_ONLY = (ENV == "prod")
@@ -1158,6 +1157,11 @@ Règles :
         # Nettoyer les éventuels backticks markdown
         raw = raw.replace('```json', '').replace('```', '').strip()
         
+        # Vérifier que la réponse n'est pas vide
+        if not raw:
+            logger.warning("[RELEVANCE] Réponse vide de l'IA, on laisse passer")
+            return True, ""
+        
         # Parser le JSON
         result = json.loads(raw)
         
@@ -1193,7 +1197,7 @@ Règles :
         
     except json.JSONDecodeError as e:
         # Si l'IA n'a pas renvoyé du JSON valide
-        logger.error(f"[RELEVANCE] JSON invalide : {e} | Raw : {raw[:200]}")
+        logger.error(f"[RELEVANCE] JSON invalide : {e}")
         # Principe de précaution : on accepte mais on log l'erreur
         return True, ""
         
