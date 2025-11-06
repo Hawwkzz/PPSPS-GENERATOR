@@ -358,6 +358,514 @@ print("### MODEL IN USE:", OPENROUTER_DEFAULT_MODEL, flush=True)
 from pypdf import PdfReader
 from docx import Document as DocxDocument
 
+
+# Chemin du template PPSPS
+TEMPLATE_PATH = "/mnt/user-data/uploads/248234559-modele-PPSPS.docx"
+
+# ===== Template Filler (intégré) =====
+"""
+Système de remplissage intelligent du template PPSPS.
+Utilise le template DOCX original et le remplit via l'IA avec flexibilité.
+"""
+
+from docx import Document
+from docx.shared import Pt, RGBColor
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+from typing import Dict, Any, List
+import re
+import json
+
+
+class TemplateFiller:
+    """Remplit intelligemment le template PPSPS avec les données du projet."""
+    
+    def __init__(self, template_path: str):
+        """
+        Args:
+            template_path: Chemin vers le template DOCX original
+        """
+        self.template_path = template_path
+        self.doc = Document(template_path)
+        
+    def fill_with_ai(self, project_data: Dict[str, Any], evidence_pack: str, 
+                     img_catalog: List[Dict], openai_client, model: str) -> Document:
+        """
+        Remplit le template en utilisant l'IA pour analyser les pièces.
+        
+        Args:
+            project_data: Données du projet (formulaire)
+            evidence_pack: Extraits des pièces uploadées
+            img_catalog: Liste des images disponibles
+            openai_client: Client OpenAI configuré
+            model: Nom du modèle à utiliser
+            
+        Returns:
+            Document DOCX rempli
+        """
+        # 1. Créer le prompt pour l'IA
+        prompt = self._build_fill_prompt(project_data, evidence_pack, img_catalog)
+        
+        # 2. Appeler l'IA pour obtenir les données de remplissage
+        messages = [
+            {
+                "role": "system",
+                "content": "Tu es un expert coordinateur SPS qui remplit des PPSPS. "
+                          "Tu analyses les documents fournis et extrais les informations pertinentes. "
+                          "Tu réponds UNIQUEMENT en JSON valide."
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ]
+        
+        response = openai_client.chat.completions.create(
+            model=model,
+            temperature=0.2,
+            messages=messages
+        )
+        
+        # 3. Parser la réponse JSON
+        raw_response = response.choices[0].message.content.strip()
+        # Nettoyer les backticks markdown si présents
+        raw_response = raw_response.replace('```json', '').replace('```', '').strip()
+        fill_data = json.loads(raw_response)
+        
+        # 4. Remplir le template avec les données
+        self._fill_document(fill_data, img_catalog)
+        
+        return self.doc
+    
+    def _build_fill_prompt(self, project_data: Dict, evidence_pack: str, 
+                          img_catalog: List[Dict]) -> str:
+        """Construit le prompt pour guider l'IA dans le remplissage."""
+        
+        return f"""Tu dois extraire et structurer les informations pour remplir un PPSPS.
+
+🎯 RÈGLE ABSOLUE : PRIORITÉ DES SOURCES
+1. **TOUJOURS utiliser EN PRIORITÉ les informations des PIÈCES UPLOADÉES** (extraits ci-dessous)
+2. Le **formulaire** sert UNIQUEMENT de **FALLBACK** si l'info est absente des pièces
+3. Si une info est trouvée dans les pièces, l'utiliser MÊME si le formulaire contient autre chose
+
+📄 PIÈCES UPLOADÉES (PRIORITÉ ABSOLUE) :
+{evidence_pack}
+
+📝 FORMULAIRE (FALLBACK UNIQUEMENT) :
+{json.dumps(project_data, ensure_ascii=False, indent=2)}
+
+🖼️ IMAGES DISPONIBLES :
+{json.dumps(img_catalog, ensure_ascii=False, indent=2)}
+
+Réponds en JSON avec cette structure EXACTE :
+
+{{
+  "informations_generales": {{
+    "nom_entreprise": "...",
+    "telephone": "...",
+    "adresse": "...",
+    "email": "...",
+    "fax": "...",
+    "nom_chef_entreprise": "...",
+    "description_operation": "Description détaillée de l'opération/chantier",
+    "lot": "Lot de l'entreprise",
+    "travaux_confies": "Description des travaux confiés à l'entreprise",
+    "date_debut": "JJ/MM/AAAA",
+    "date_fin": "JJ/MM/AAAA",
+    "effectif_moyen": "nombre",
+    "effectif_pointe": "nombre"
+  }},
+  
+  "organismes_prevention": {{
+    "medecine_travail": {{"nom": "...", "telephone": "..."}},
+    "inspecteur_travail": {{"nom": "...", "telephone": "..."}},
+    "csps": {{"nom": "...", "telephone": "..."}},
+    "carsat": {{"nom": "...", "telephone": "..."}}
+  }},
+  
+  "mesures_hygiene": {{
+    "vestiaires": {{
+      "description": "Description des vestiaires",
+      "emplacement": "Lieu",
+      "date_service": "JJ/MM/AAAA"
+    }},
+    "sanitaires": {{
+      "description": "Description des sanitaires",
+      "emplacement": "Lieu",
+      "date_service": "JJ/MM/AAAA"
+    }},
+    "restauration": {{
+      "description": "Description de la restauration",
+      "emplacement": "Lieu",
+      "date_service": "JJ/MM/AAAA"
+    }}
+  }},
+  
+  "secours_evacuation": {{
+    "pompiers": "18 ou 112",
+    "samu": "15",
+    "police": "17",
+    "centre_antipoison": "...",
+    "sst_chantier": [{{"nom": "...", "telephone": "..."}}],
+    "point_rassemblement": "Description du point de rassemblement",
+    "consignes_specifiques": "Consignes spécifiques au chantier"
+  }},
+  
+  "risques_travaux": [
+    {{
+      "phase": "Phase de travail 1",
+      "moyens": "Matériels, équipements utilisés",
+      "risques_entreprise": "Risques pour nos salariés",
+      "risques_autres": "Risques pour les autres intervenants",
+      "prevention": "Mesures de prévention mises en place"
+    }}
+  ],
+  
+  "risques_environnement": [
+    {{
+      "categorie": "Déplacements du personnel sur le chantier",
+      "contraintes_environnement": "Contraintes liées à l'environnement",
+      "risques_autres_intervenants": "Risques des autres intervenants",
+      "prevention": "Moyens de prévention",
+      "observations": "Observations éventuelles"
+    }},
+    {{
+      "categorie": "Organisation du chantier",
+      "contraintes_environnement": "...",
+      "risques_autres_intervenants": "...",
+      "prevention": "...",
+      "observations": "..."
+    }},
+    {{
+      "categorie": "Autres",
+      "contraintes_environnement": "...",
+      "risques_autres_intervenants": "...",
+      "prevention": "...",
+      "observations": "..."
+    }}
+  ],
+  
+  "annexes": [
+    {{
+      "titre": "Plans de circulation",
+      "images": ["fichier1.png", "fichier2.png"],
+      "description": "Description optionnelle"
+    }}
+  ]
+}}
+
+⚠️ RÈGLES IMPORTANTES :
+- Si une info n'est pas trouvée : laisser chaîne vide "" ou null
+- Pour les téléphones : format exact trouvé dans les docs (ex: "01 23 45 67 89")
+- Pour les dates : format JJ/MM/AAAA
+- Pour les risques : être FACTUEL et PRÉCIS (pas de généralités)
+- Séparer les différents risques/phases avec des détails distincts
+- Pour les annexes : utiliser UNIQUEMENT les noms de fichiers du catalogue fourni
+- Si pas d'info dans les pièces ET dans le formulaire : laisser vide
+"""
+    
+    def _fill_document(self, fill_data: Dict, img_catalog: List[Dict]):
+        """Remplit le document avec les données extraites par l'IA."""
+        
+        # 1. Remplir le premier tableau (informations générales)
+        if len(self.doc.tables) > 0:
+            self._fill_info_table(self.doc.tables[0], fill_data.get("informations_generales", {}))
+        
+        # 2. Remplir le deuxième tableau (description opération)
+        if len(self.doc.tables) > 1:
+            self._fill_operation_table(self.doc.tables[1], fill_data.get("informations_generales", {}))
+        
+        # 3. Remplir le tableau hygiène
+        if len(self.doc.tables) > 2:
+            self._fill_hygiene_table(self.doc.tables[2], fill_data.get("mesures_hygiene", {}))
+        
+        # 4. Remplir le tableau risques travaux
+        if len(self.doc.tables) > 3:
+            self._fill_risques_travaux_table(self.doc.tables[3], 
+                                            fill_data.get("risques_travaux", []))
+        
+        # 5. Remplir le tableau risques environnement
+        if len(self.doc.tables) > 4:
+            self._fill_risques_env_table(self.doc.tables[4], 
+                                        fill_data.get("risques_environnement", []))
+        
+        # 6. Remplir les sections texte (organismes, secours)
+        self._fill_text_sections(fill_data)
+        
+        # 7. Ajouter les annexes à la fin
+        self._add_annexes(fill_data.get("annexes", []), img_catalog)
+    
+    def _fill_info_table(self, table, data: Dict):
+        """Remplit le tableau d'informations générales (TABLE 0)."""
+        if len(table.rows) > 0 and len(table.rows[0].cells) > 0:
+            cell = table.rows[0].cells[0]
+            
+            # Construire le texte avec les données
+            nom = data.get("nom_entreprise", "")
+            tel = data.get("telephone", "")
+            adresse = data.get("adresse", "")
+            email = data.get("email", "")
+            fax = data.get("fax", "")
+            chef = data.get("nom_chef_entreprise", "")
+            
+            new_text = (
+                f"Nom de l'entreprise : {nom if nom else '…' * 40}\n"
+                f"Tél. : {tel if tel else '…' * 20}\n"
+                f"Adresse : {adresse if adresse else '…' * 50}\n"
+                f"E-mail : {email if email else '…' * 30}\n"
+                f"Fax : {fax if fax else '…' * 30}\n"
+                f"Nom du Chef d'entreprise : {chef if chef else '…' * 40}"
+            )
+            
+            cell.text = new_text
+    
+    def _fill_operation_table(self, table, data: Dict):
+        """Remplit le tableau description de l'opération (TABLE 1)."""
+        if len(table.rows) >= 4:
+            # Ligne 0 : Description et Lot
+            if len(table.rows[0].cells) >= 3:
+                desc = data.get("description_operation", "")
+                lot = data.get("lot", "")
+                table.rows[0].cells[1].text = desc if desc else ""
+                table.rows[0].cells[2].text = f"Lot : {lot if lot else ''}"
+            
+            # Ligne 1 : Travaux confiés
+            if len(table.rows[1].cells) >= 2:
+                travaux = data.get("travaux_confies", "")
+                table.rows[1].cells[1].text = travaux if travaux else ""
+            
+            # Ligne 2 : Planning
+            if len(table.rows[2].cells) >= 2:
+                debut = data.get("date_debut", "")
+                fin = data.get("date_fin", "")
+                table.rows[2].cells[1].text = f"Date de début : {debut}\tDate de fin : {fin}"
+            
+            # Ligne 3 : Effectifs
+            if len(table.rows[3].cells) >= 2:
+                moyen = data.get("effectif_moyen", "")
+                pointe = data.get("effectif_pointe", "")
+                table.rows[3].cells[1].text = f"Effectif moyen : {moyen}\tEffectif de pointe : {pointe}"
+    
+    def _fill_hygiene_table(self, table, data: Dict):
+        """Remplit le tableau mesures d'hygiène (TABLE 2)."""
+        # Vestiaires (lignes 0-2)
+        if len(table.rows) > 2:
+            vest = data.get("vestiaires", {})
+            if len(table.rows[1].cells) >= 2:
+                table.rows[1].cells[1].text = vest.get("description", "")
+            if len(table.rows[2].cells) >= 3:
+                table.rows[2].cells[1].text = vest.get("emplacement", "")
+                table.rows[2].cells[2].text = f"Date de mise en service : {vest.get('date_service', '')}"
+        
+        # Sanitaires (lignes 3-5)
+        if len(table.rows) > 5:
+            sani = data.get("sanitaires", {})
+            if len(table.rows[4].cells) >= 2:
+                table.rows[4].cells[1].text = sani.get("description", "")
+            if len(table.rows[5].cells) >= 3:
+                table.rows[5].cells[1].text = sani.get("emplacement", "")
+                table.rows[5].cells[2].text = f"Date de mise en service : {sani.get('date_service', '')}"
+        
+        # Restauration (lignes 6-8)
+        if len(table.rows) > 8:
+            resto = data.get("restauration", {})
+            if len(table.rows[7].cells) >= 2:
+                table.rows[7].cells[1].text = resto.get("description", "")
+            if len(table.rows[8].cells) >= 3:
+                table.rows[8].cells[1].text = resto.get("emplacement", "")
+                table.rows[8].cells[2].text = f"Date de mise en service : {resto.get('date_service', '')}"
+    
+    def _fill_risques_travaux_table(self, table, risques: List[Dict]):
+        """Remplit le tableau d'analyse des risques travaux (TABLE 3)."""
+        if not risques or len(table.rows) < 3:
+            return
+        
+        # Supprimer les lignes existantes après l'en-tête (garder lignes 0-1)
+        while len(table.rows) > 2:
+            table._element.remove(table.rows[-1]._element)
+        
+        # Ajouter une ligne par phase/risque
+        for risque in risques:
+            row = table.add_row()
+            cells = row.cells
+            
+            if len(cells) >= 5:
+                cells[0].text = risque.get("phase", "")
+                cells[1].text = risque.get("moyens", "")
+                cells[2].text = risque.get("risques_entreprise", "")
+                cells[3].text = risque.get("risques_autres", "")
+                cells[4].text = risque.get("prevention", "")
+                
+                # Ajouter une bordure pointillée pour séparer les risques
+                self._add_dotted_border(row)
+    
+    def _fill_risques_env_table(self, table, risques: List[Dict]):
+        """Remplit le tableau risques liés à l'environnement (TABLE 4)."""
+        if not risques or len(table.rows) < 2:
+            return
+        
+        # Les 3 catégories fixes sont déjà dans le template (lignes 2-4)
+        # On remplit juste les cellules correspondantes
+        for i, risque in enumerate(risques[:3]):  # Max 3 catégories
+            row_idx = 2 + i
+            if row_idx < len(table.rows):
+                row = table.rows[row_idx]
+                if len(row.cells) >= 5:
+                    # La première cellule contient déjà la catégorie
+                    row.cells[1].text = risque.get("contraintes_environnement", "")
+                    row.cells[2].text = risque.get("risques_autres_intervenants", "")
+                    row.cells[3].text = risque.get("prevention", "")
+                    row.cells[4].text = risque.get("observations", "")
+    
+    def _fill_text_sections(self, fill_data: Dict):
+        """Remplit les sections textuelles (organismes, secours)."""
+        orga = fill_data.get("organismes_prevention", {})
+        secours = fill_data.get("secours_evacuation", {})
+        
+        # Parcourir les paragraphes et remplir aux bons endroits
+        organismes_idx = None
+        secours_idx = None
+        
+        for i, para in enumerate(self.doc.paragraphs):
+            text = para.text.strip().upper()
+            if "ORGANISMES DE PREVENTION" in text:
+                organismes_idx = i
+            elif "SECOURS ET EVACUATION" in text and organismes_idx is not None:
+                secours_idx = i
+            elif "MESURES" in text or "HYGIENE" in text:
+                break  # On s'arrête après avoir trouvé les sections
+        
+        # Remplir ORGANISMES DE PREVENTION (paragraphes juste après le titre)
+        if organismes_idx is not None and orga:
+            insert_idx = organismes_idx + 1
+            content = []
+            
+            med = orga.get("medecine_travail", {})
+            if med.get("nom") or med.get("telephone"):
+                content.append(f"Médecine du travail : {med.get('nom', '')} - Tél : {med.get('telephone', '')}")
+            
+            insp = orga.get("inspecteur_travail", {})
+            if insp.get("nom") or insp.get("telephone"):
+                content.append(f"Inspection du travail : {insp.get('nom', '')} - Tél : {insp.get('telephone', '')}")
+            
+            csps = orga.get("csps", {})
+            if csps.get("nom") or csps.get("telephone"):
+                content.append(f"CSPS : {csps.get('nom', '')} - Tél : {csps.get('telephone', '')}")
+            
+            carsat = orga.get("carsat", {})
+            if carsat.get("nom") or carsat.get("telephone"):
+                content.append(f"CARSAT : {carsat.get('nom', '')} - Tél : {carsat.get('telephone', '')}")
+            
+            if content:
+                # Remplir ou créer le paragraphe
+                if insert_idx < len(self.doc.paragraphs):
+                    self.doc.paragraphs[insert_idx].text = "\n".join(content)
+                else:
+                    p = self.doc.add_paragraph("\n".join(content))
+        
+        # Remplir SECOURS ET EVACUATION (paragraphe juste après le titre)
+        if secours_idx is not None and secours:
+            insert_idx = secours_idx + 1
+            content = []
+            
+            if secours.get("pompiers"):
+                content.append(f"Pompiers : {secours.get('pompiers')}")
+            if secours.get("samu"):
+                content.append(f"SAMU : {secours.get('samu')}")
+            if secours.get("police"):
+                content.append(f"Police : {secours.get('police')}")
+            if secours.get("centre_antipoison"):
+                content.append(f"Centre antipoison : {secours.get('centre_antipoison')}")
+            
+            sst_list = secours.get("sst_chantier", [])
+            if sst_list:
+                content.append("\nSauveteurs Secouristes du Travail (SST) :")
+                for sst in sst_list:
+                    if isinstance(sst, dict):
+                        content.append(f"  - {sst.get('nom', '')} : {sst.get('telephone', '')}")
+            
+            if secours.get("point_rassemblement"):
+                content.append(f"\nPoint de rassemblement : {secours.get('point_rassemblement')}")
+            
+            if secours.get("consignes_specifiques"):
+                content.append(f"\nConsignes spécifiques :\n{secours.get('consignes_specifiques')}")
+            
+            if content:
+                # Remplir ou créer le paragraphe
+                if insert_idx < len(self.doc.paragraphs):
+                    self.doc.paragraphs[insert_idx].text = "\n".join(content)
+                else:
+                    p = self.doc.add_paragraph("\n".join(content))
+    
+    def _add_annexes(self, annexes: List[Dict], img_catalog: List[Dict]):
+        """Ajoute les annexes à la fin du document."""
+        
+        # Trouver la section ANNEXES
+        annexes_found = False
+        for para in self.doc.paragraphs:
+            if "ANNEXES" in para.text and any(run.bold for run in para.runs):
+                annexes_found = True
+                break
+        
+        if not annexes_found:
+            # Ajouter le titre ANNEXES
+            self.doc.add_page_break()
+            p = self.doc.add_paragraph()
+            run = p.add_run("ANNEXES")
+            run.bold = True
+            run.font.size = Pt(14)
+        
+        # Ajouter chaque annexe
+        for annexe in annexes:
+            titre = annexe.get("titre", "")
+            images = annexe.get("images", [])
+            description = annexe.get("description", "")
+            
+            if titre:
+                p = self.doc.add_paragraph()
+                run = p.add_run(f"\n{titre}")
+                run.bold = True
+                run.font.size = Pt(12)
+            
+            if description:
+                self.doc.add_paragraph(description)
+            
+            # Ajouter les images
+            for img_name in images:
+                # Trouver le chemin complet de l'image
+                img_path = None
+                for img in img_catalog:
+                    if img.get("file") == img_name:
+                        img_path = img.get("stored_path")
+                        break
+                
+                if img_path:
+                    try:
+                        from docx.shared import Inches
+                        self.doc.add_picture(img_path, width=Inches(6))
+                        # Légende
+                        p = self.doc.add_paragraph(f"Figure : {img_name}")
+                        p.alignment = 1  # Centré
+                    except Exception:
+                        # Si erreur, ajouter juste une mention
+                        self.doc.add_paragraph(f"[Image : {img_name}]")
+    
+    def _add_dotted_border(self, row):
+        """Ajoute une bordure pointillée en bas d'une ligne de tableau."""
+        tcPr = row.cells[0]._element.get_or_add_tcPr()
+        tcBorders = OxmlElement('w:tcBorders')
+        bottom = OxmlElement('w:bottom')
+        bottom.set(qn('w:val'), 'dotted')
+        bottom.set(qn('w:sz'), '8')
+        bottom.set(qn('w:space'), '0')
+        bottom.set(qn('w:color'), '808080')
+        tcBorders.append(bottom)
+        tcPr.append(tcBorders)
+
+
+# Chemin du template PPSPS
+TEMPLATE_PATH = "/mnt/user-data/uploads/248234559-modele-PPSPS.docx"
+
 # ===== App =====
 ENV = os.getenv("ENV", "dev").lower()  # "prod" en production
 HTTPS_ONLY = (ENV == "prod")
@@ -1096,36 +1604,77 @@ def _add_cover_page(doc, project_name: str, project_address: str):
 
 @app.get("/documents/{doc_id}/export_docx")
 def export_docx_by_id(doc_id: int, session: Session = Depends(get_session), user: UserDB = Depends(require_login)):
+    """
+    Exporte le DOCX généré depuis le template.
+    Récupère le fichier DOCX sauvegardé lors de la génération.
+    """
     doc = ensure_doc_is_owned(doc_id, user, session)
-    # ... (garde le corps existant de ta fonction export_docx_by_id,
-    # à partir de la création du DocxDocument jusqu'au StreamingResponse)
-    d = DocxDocument()
-    _build_doc_styles(d)
-
-    # Récupérer le projet pour la page de garde
     proj = session.get(ProjectDB, doc.project_id)
     
-    # ✅ AJOUT PAGE DE GARDE
-    _add_cover_page(d, proj.name, proj.address)
+    # Extraire le chemin du DOCX depuis content_md
+    # Format : "[DOCX généré : /path/to/file.docx]"
+    import re
+    match = re.search(r'\[DOCX généré : (.+?)\]', doc.content_md or '')
     
-    segments = _split_text_and_tables(doc.content_md or "")
-    project_img_dir = os.path.join("uploads", str(doc.project_id), "images")
-    img_lookup = _image_lookup_for_project(session, doc.project_id)
-    for kind, *payload in segments:
-        if kind == "text":
-            text = payload[0]
-            _maybe_add_images(d, text, base_dir=project_img_dir, image_lookup=img_lookup)
-        elif kind == "table":
-            section, csv_text = payload
-            _docx_add_csv_table(d, section, csv_text)
-    section = d.sections[-1]
-    footer = section.footer
-    p = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
-    p.text = f"PPSPS - {proj.name} - Généré le {datetime.now().strftime('%d/%m/%Y %H:%M')}"
-    bio = BytesIO(); d.save(bio); bio.seek(0)
-    filename = f"PPSPS_{proj.name.replace(' ', '_')}_{doc.version}.docx"
-    headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
-    return StreamingResponse(bio, media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document", headers=headers)
+    if match:
+        # Nouveau système : DOCX déjà généré
+        docx_path = match.group(1)
+        
+        if os.path.exists(docx_path):
+            # Retourner le DOCX sauvegardé
+            filename = f"PPSPS_{proj.name.replace(' ', '_')}_{doc.version}.docx"
+            headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+            
+            with open(docx_path, 'rb') as f:
+                bio = BytesIO(f.read())
+            
+            bio.seek(0)
+            return StreamingResponse(
+                bio,
+                media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                headers=headers
+            )
+        else:
+            raise HTTPException(status_code=404, detail="DOCX généré introuvable sur le serveur")
+    
+    # Ancien système (fallback) : reconstruire depuis Markdown
+    else:
+        d = DocxDocument()
+        _build_doc_styles(d)
+        
+        # Page de garde
+        _add_cover_page(d, proj.name, proj.address)
+        
+        segments = _split_text_and_tables(doc.content_md or "")
+        project_img_dir = os.path.join("uploads", str(doc.project_id), "images")
+        img_lookup = _image_lookup_for_project(session, doc.project_id)
+        
+        for kind, *payload in segments:
+            if kind == "text":
+                text = payload[0]
+                _maybe_add_images(d, text, base_dir=project_img_dir, image_lookup=img_lookup)
+            elif kind == "table":
+                section, csv_text = payload
+                _docx_add_csv_table(d, section, csv_text)
+        
+        section = d.sections[-1]
+        footer = section.footer
+        p = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
+        p.text = f"PPSPS - {proj.name} - Généré le {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+        
+        bio = BytesIO()
+        d.save(bio)
+        bio.seek(0)
+        
+        filename = f"PPSPS_{proj.name.replace(' ', '_')}_{doc.version}.docx"
+        headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+        
+        return StreamingResponse(
+            bio,
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers=headers
+        )
+
 
 
 import fitz  # PyMuPDF
@@ -1973,6 +2522,10 @@ def _docx_add_csv_table(doc, section: str, csv_text: str):
 @app.post("/projects/{project_id}/generate_ppsps_freeform")
 def generate_ppsps_freeform(project_id: int, session: Session = Depends(get_session), 
                            user: UserDB = Depends(require_login)):
+    """
+    Génère un PPSPS en utilisant le template DOCX et en le remplissant intelligemment avec l'IA.
+    Sauvegarde le DOCX généré pour export ultérieur.
+    """
     proj = session.get(ProjectDB, project_id)
     if not proj:
         raise HTTPException(status_code=404, detail="Project not found")
@@ -1987,7 +2540,7 @@ def generate_ppsps_freeform(project_id: int, session: Session = Depends(get_sess
         )
     except InsufficientTokensError as e:
         raise HTTPException(
-            status_code=402,  # Payment Required
+            status_code=402,
             detail={
                 "error": "insufficient_tokens",
                 "message": str(e),
@@ -1999,18 +2552,18 @@ def generate_ppsps_freeform(project_id: int, session: Session = Depends(get_sess
     is_relevant, relevance_message = _check_files_relevance_with_ai(session, project_id)
 
     if not is_relevant:
-    # Documents clairement non pertinents : bloquer
+        TokenService.refund_token(
+            session=session,
+            user_id=user.id,
+            project_id=project_id,
+            reason="Documents non pertinents - remboursement automatique"
+        )
         raise HTTPException(status_code=400, detail=relevance_message)
 
     if relevance_message:
-    # Avertissement (confiance < 70%) : log mais continue
         logger.warning(f"[PPSPS] {relevance_message}")
-    # Tu peux aussi l'afficher à l'utilisateur via une notification
-
-
     
-    
-    # Récupération SIMPLE de toutes les images (pas de tri IA)
+    # Récupération des images
     all_images = session.exec(
         select(AttachmentDB).where(
             AttachmentDB.project_id == project_id,
@@ -2028,106 +2581,93 @@ def generate_ppsps_freeform(project_id: int, session: Session = Depends(get_sess
     ]
     
     logger.info(f"[IMG] {len(img_catalog)} images disponibles pour le projet {project_id}")
-    if img_catalog:
-        logger.info(f"[IMG] Liste : {', '.join([i['file'] for i in img_catalog])}")
 
-# Evidence depuis les pièces
+    # Evidence depuis les pièces
     blob = _project_text_blob(session, project_id, limit_chars=80_000)
     evidence = _build_evidence_pack(blob, proj)
     meta_hint = _build_meta_hint(proj)
 
-    # Prompt & appel modèle
-    if not OPENROUTER_API_KEY:
-        raise HTTPException(status_code=500, detail="OPENROUTER_API_KEY manquant.")
-
-    messages = _prompt_freeform_ppsps(meta_hint, evidence, img_catalog, kb_fallback_present=True)
-    try:
-        resp = client.chat.completions.create(
-            model=OPENROUTER_DEFAULT_MODEL,
-            temperature=0.2,
-            top_p=0.9,
-            messages=messages,
+    # Vérifier que le template existe
+    if not os.path.exists(TEMPLATE_PATH):
+        TokenService.refund_token(
+            session=session,
+            user_id=user.id,
+            project_id=project_id,
+            reason="Template PPSPS introuvable - remboursement automatique"
         )
-        md = (resp.choices[0].message.content or "").strip()
-        
-        # Logs de qualité du document généré
-        logger.info(f"[PPSPS] Document généré : {len(md)} caractères")
-        logger.info(f"[PPSPS] Balises [IMAGE:] trouvées : {md.count('[IMAGE:')}")
-        logger.info(f"[PPSPS] Tableaux [TABLE:] trouvés : {md.count('[TABLE:')}")
-        
-        # Vérifier cohérence images
-        expected_images = len(img_catalog)
-        actual_images = md.count("[IMAGE:")
-        if expected_images > 0:
-            ratio = (actual_images / expected_images) * 100
-            if ratio < 30:
-                logger.warning(f"[PPSPS] WARNING Seulement {actual_images}/{expected_images} images insérées ({ratio:.0f}%)")
-            else:
-                logger.info(f"[PPSPS] OK {actual_images}/{expected_images} images insérées ({ratio:.0f}%)")
-    except Exception :
-        raise HTTPException(status_code=502, detail="Génération indisponible pour le moment.")
-
-    # Si pas de contenus MO détectés et que la section 3 est vide => injecter fallback KB
-    needs_kb_fallback = "3. Modes opératoires" in md and re.search(r"#\s*3\.\s*Modes opératoires\s*(?:\n|\r\n)(?!#)", md) and ("Étapes" not in md and "EPI" not in md)
-    if needs_kb_fallback:
-        kb_block = _render_modes_ops_from_kb(proj)
-        if kb_block:
-            md = re.sub(r"(#\s*3\.\s*Modes opératoires[^\n\r]*\n+)", r"\1" + kb_block + "\n\n", md)
-
-    md = _validate_and_fix_markdown(md)
-    if img_catalog:  # uniquement si shortlist non vide
-       md = _ensure_annexes_with_images(md, img_catalog)
-
-    if "[IMAGE:" not in md:
-       logger.warning("[PPSPS] ❌ Aucun tag [IMAGE:...] trouvé dans le document final — aucune image insérée.")
-
-
-
-    # Enregistrer le document
-    existing = session.exec(
-        select(DocumentDB).where(
-            DocumentDB.project_id == project_id,
-            DocumentDB.doc_type == "PPSPS"
-        )
-    ).all()
-    next_version = (max([d.version for d in existing]) + 1) if existing else 1
-
-    dbdoc = DocumentDB(
-        project_id=project_id,
-        doc_type="PPSPS",
-        content_md=md,
-        version=next_version,
-        status="draft",
-    )
-    session.add(dbdoc)
-    session.commit()
-    session.refresh(dbdoc)
-
+        raise HTTPException(status_code=500, detail="Template PPSPS introuvable")
     
-    return {
-        "ok": True,
-        "document_id": dbdoc.id,
-        "version": dbdoc.version,
-        "length": len(md),
-        "preview": md[:800]
-    }
+    # Utiliser le TemplateFiller pour remplir le template
+    try:
+        filler = TemplateFiller(TEMPLATE_PATH)
+        filled_doc = filler.fill_with_ai(
+            project_data=meta_hint,
+            evidence_pack=evidence,
+            img_catalog=img_catalog,
+            openai_client=client,
+            model=OPENROUTER_DEFAULT_MODEL
+        )
+        
+        # Déterminer la version
+        existing = session.exec(
+            select(DocumentDB).where(
+                DocumentDB.project_id == project_id,
+                DocumentDB.doc_type == "PPSPS"
+            )
+        ).all()
+        next_version = (max([d.version for d in existing]) + 1) if existing else 1
+        
+        # Sauvegarder le DOCX généré dans un fichier
+        project_dir = _project_upload_dir(project_id)
+        docx_filename = f"PPSPS_v{next_version}.docx"
+        docx_path = os.path.join(project_dir, docx_filename)
+        filled_doc.save(docx_path)
+        
+        logger.info(f"[PPSPS] DOCX sauvegardé : {docx_path}")
+        
+        # Enregistrer dans la base de données avec le chemin du DOCX
+        dbdoc = DocumentDB(
+            project_id=project_id,
+            doc_type="PPSPS",
+            content_md=f"[DOCX généré : {docx_path}]",
+            version=next_version,
+            status="draft",
+        )
+        session.add(dbdoc)
+        session.commit()
+        session.refresh(dbdoc)
+        
+        logger.info(f"[PPSPS] Document DB créé (ID: {dbdoc.id}, version {next_version})")
+        
+        return {
+            "ok": True,
+            "document_id": dbdoc.id,
+            "version": dbdoc.version,
+            "docx_path": docx_path,
+            "message": "PPSPS généré avec succès depuis le template"
+        }
+        
+    except json.JSONDecodeError as e:
+        logger.error(f"[PPSPS] Erreur parsing JSON de l'IA : {e}")
+        TokenService.refund_token(
+            session=session,
+            user_id=user.id,
+            project_id=project_id,
+            reason="Erreur de génération (JSON invalide) - remboursement automatique"
+        )
+        raise HTTPException(status_code=502, detail="Erreur de génération : réponse IA invalide")
+    except Exception as e:
+        logger.error(f"[PPSPS] Erreur génération : {e}")
+        TokenService.refund_token(
+            session=session,
+            user_id=user.id,
+            project_id=project_id,
+            reason="Erreur de génération - remboursement automatique"
+        )
+        raise HTTPException(status_code=502, detail=f"Génération indisponible : {str(e)}")
 
 
-def _insert_in_section(md, heading, figure_block):
-    # trouve le titre de section `heading` (## ...) et injecte `figure_block` juste après.
-    return md  # implémentation courte déjà existante ? sinon simple regex/split.
 
-def _figure_block(title, filename, legend):
-    # génère :
-    # Figure X — {title}
-    # {legend}. Source: {filename}. {date/version si dispo}
-    # [IMAGE:{filename}]
-    return f"\n\n**{title}**\n{legend} — Source: {filename}\n\n[IMAGE:{filename}]\n"
-
-
-# =====================================================================
-#                           UPLOADS (pièces)
-# =====================================================================
 
 @app.post("/projects/{project_id}/files")
 def upload_file(project_id: int, file: UploadFile = File(...), session: Session = Depends(get_session), user: UserDB = Depends(require_login)):
