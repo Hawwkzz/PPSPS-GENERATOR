@@ -14,7 +14,7 @@ class UserDB(Base):
     email: Mapped[str] = mapped_column(unique=True, index=True)
     password_hash: Mapped[str]
     is_admin: Mapped[bool] = mapped_column(default=False)
-    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))  # <- CHANGÃ‰
+    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))
 
     projects: Mapped[list["ProjectDB"]] = relationship(back_populates="owner")
 
@@ -41,8 +41,19 @@ class ProjectDB(Base):
     end_date: Mapped[Optional[date]] = mapped_column(nullable=True, default=None)
     facts_json: Mapped[Optional[str]] = mapped_column(nullable=True, default=None)
 
-    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))   # <- CHANGÃ‰
-    updated_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))   # <- CHANGÃ‰
+    # NOUVEAUX CHAMPS SIMPLIFIÉS
+    project_reference: Mapped[str] = mapped_column(default="")
+    site_phone: Mapped[str] = mapped_column(default="")
+    company_name: Mapped[str] = mapped_column(default="")
+    company_phone: Mapped[str] = mapped_column(default="")
+    company_email: Mapped[str] = mapped_column(default="")
+    company_address: Mapped[str] = mapped_column(default="")
+    site_manager_name: Mapped[str] = mapped_column(default="")
+    owner_name: Mapped[str] = mapped_column(default="")
+    architect_name: Mapped[str] = mapped_column(default="")
+
+    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))
 
 class DocumentDB(Base):
     __tablename__ = "documentdb"
@@ -53,8 +64,8 @@ class DocumentDB(Base):
     content_md: Mapped[str]
     version: Mapped[int] = mapped_column(default=1)
     status: Mapped[str] = mapped_column(default="draft")
-    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))   # <- CHANGÃ‰
-    updated_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))   # <- CHANGÃ‰
+    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))
 
 class AttachmentDB(Base):
     __tablename__ = "attachmentdb"
@@ -66,4 +77,4 @@ class AttachmentDB(Base):
     mime_type: Mapped[str]
     size_bytes: Mapped[int]
     extracted_text: Mapped[Optional[str]] = mapped_column(nullable=True, default=None)
-    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))   # <- CHANGÃ‰
+    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))
