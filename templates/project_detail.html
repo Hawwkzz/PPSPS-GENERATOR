@@ -54,7 +54,7 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         
         <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 hover:border-blue-400 transition-colors">
-          <input type="file" name="file" accept=".pdf,.docx,.txt,.md" required
+          <input type="file" name="file" accept=".pdf,.docx,.txt,.md,.png,.jpg,.jpeg" required
                  class="block w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"/>
         </div>
 
@@ -63,11 +63,11 @@
           Uploader
         </button>
 
-        <p class="text-xs text-slate-500 text-center">PDF, DOCX, TXT, MD acceptés</p>
+        <p class="text-xs text-slate-500 text-center">PDF, DOCX, TXT, MD, PNG, JPG acceptés</p>
       </form>
     </div>
 
-    <!-- Générer PPSPS -->
+    <!-- Générer PPSPS avec loading amélioré -->
     <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
       <div class="bg-gradient-to-r from-blue-50 to-blue-100/50 border-b border-blue-200 p-5">
         <div class="flex items-center gap-3">
@@ -80,43 +80,28 @@
         </div>
       </div>
 
-      <form method="post" action="/ui/projects/{{ p.id }}/gen/ppsps" class="p-5 space-y-4" data-loading="true" id="ppsps-generate-form">
+      <form id="gen-form" method="post" action="/ui/projects/{{ p.id }}/gen/ppsps" class="p-5 space-y-4">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         {% set has_files = files|length > 0 %}
         
-        <!-- Message d'information initial -->
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4" id="info-initial">
-          <div class="flex items-start gap-3">
-            <svg class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+        <button 
+          type="submit" 
+          id="gen-button"
+          {{ 'disabled' if not has_files else '' }}
+          class="w-full py-3 rounded-lg font-semibold transition-all relative overflow-hidden {{ 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-600/30 hover:shadow-blue-600/50' if has_files else 'bg-slate-200 text-slate-400 cursor-not-allowed' }}"
+        >
+          <span class="btn-text">Générer le PPSPS</span>
+          <span class="btn-loading hidden absolute inset-0 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700">
+            <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <div class="text-sm text-blue-900">
-              <p class="font-semibold mb-1">⏱️ Temps de traitement</p>
-              <p>La génération du PPSPS prend <strong>entre 2 et 5 minutes</strong> en fonction de la taille et du nombre de vos fichiers. Merci de patienter après avoir cliqué sur "Générer".</p>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Message de génération en cours (caché par défaut) -->
-        <div class="bg-blue-600 border border-blue-700 rounded-lg p-4 mb-4 hidden" id="generation-progress">
-          <div class="flex items-start gap-3">
-            <svg class="w-5 h-5 text-white flex-shrink-0 mt-0.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-            </svg>
-            <div class="text-sm text-white">
-              <p class="font-bold mb-1">🚀 Génération en cours...</p>
-              <p>L'IA analyse vos documents et génère votre PPSPS. Cette opération prend du temps proportionnellement à la taille de vos fichiers. <strong>Ne fermez pas cette page</strong>.</p>
-            </div>
-          </div>
-        </div>
-        
-        <button type="submit" {{ 'disabled' if not has_files else '' }} id="generate-btn"
-                class="w-full py-3 rounded-lg font-semibold transition-all {{ 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-600/30 hover:shadow-blue-600/50' if has_files else 'bg-slate-200 text-slate-400 cursor-not-allowed' }}">
-          Générer le PPSPS
+            <span class="text-white font-semibold">Génération en cours...</span>
+          </span>
         </button>
 
         <p class="text-xs text-slate-500 text-center">
-          {{ 'Le document sera généré à partir des pièces uploadées.' if has_files else 'Ajoutez au moins une pièce pour activer la génération.' }}
+          {{ 'Le document sera généré à partir des pièces uploadées. Cela peut prendre plusieurs minutes.' if has_files else 'Ajoutez au moins une pièce pour activer la génération.' }}
         </p>
       </form>
     </div>
@@ -133,7 +118,7 @@
       </div>
       <div class="font-semibold text-slate-900">
         {% set works = (p.works_csv or '').split(',') | select('string') | map('trim') | list %}
-        {{ works|reject('equalto','')|list|join(', ') if works else '–' }}
+        {{ works|reject('equalto','')|list|join(', ') if works else '—' }}
       </div>
     </div>
 
@@ -285,6 +270,34 @@
 
 {% block scripts %}
 <script>
+// Gestion du bouton de génération avec loading
+document.getElementById('gen-form')?.addEventListener('submit', function(e) {
+  const button = document.getElementById('gen-button');
+  if (!button || button.disabled) return;
+  
+  const btnText = button.querySelector('.btn-text');
+  const btnLoading = button.querySelector('.btn-loading');
+  
+  // Désactiver le bouton
+  button.disabled = true;
+  button.classList.remove('hover:from-blue-700', 'hover:to-blue-800', 'hover:shadow-blue-600/50');
+  button.classList.add('opacity-90', 'cursor-wait');
+  
+  // Afficher le loading
+  btnText.classList.add('invisible');
+  btnLoading.classList.remove('hidden');
+  
+  // Timeout de sécurité (réactiver après 5 minutes si pas de réponse)
+  setTimeout(() => {
+    button.disabled = false;
+    button.classList.remove('opacity-90', 'cursor-wait');
+    button.classList.add('hover:from-blue-700', 'hover:to-blue-800', 'hover:shadow-blue-600/50');
+    btnText.classList.remove('invisible');
+    btnLoading.classList.add('hidden');
+  }, 300000);
+});
+
+// Suppression de fichier
 document.querySelectorAll('.js-del-file').forEach(btn => {
   btn.addEventListener('click', async (e) => {
     e.preventDefault();
@@ -302,32 +315,6 @@ document.querySelectorAll('.js-del-file').forEach(btn => {
     }
   });
 });
-
-// Gestion de l'affichage du message de génération
-const generateForm = document.getElementById('ppsps-generate-form');
-if (generateForm) {
-  generateForm.addEventListener('submit', function(e) {
-    const infoInitial = document.getElementById('info-initial');
-    const generationProgress = document.getElementById('generation-progress');
-    const generateBtn = document.getElementById('generate-btn');
-    
-    // Cacher le message initial et afficher le message de progression
-    if (infoInitial) infoInitial.classList.add('hidden');
-    if (generationProgress) generationProgress.classList.remove('hidden');
-    
-    // Désactiver le bouton et changer le texte
-    if (generateBtn) {
-      generateBtn.disabled = true;
-      generateBtn.textContent = 'Génération en cours...';
-      generateBtn.classList.add('opacity-75', 'cursor-not-allowed');
-    }
-    
-    // Scroll vers le message pour le rendre visible
-    if (generationProgress) {
-      generationProgress.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  });
-}
 </script>
 {% endblock %}
 {% endblock %}
