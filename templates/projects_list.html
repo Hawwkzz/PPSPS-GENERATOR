@@ -7,7 +7,6 @@
     <p class="text-slate-600 mt-2">Gérez vos chantiers et générez vos PPSPS</p>
   </header>
 
-  <!-- Formulaire de création -->
   <section class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
     <div class="bg-gradient-to-r from-blue-50 to-blue-100/50 border-b border-blue-200 p-6">
       <div class="flex items-center gap-3">
@@ -20,7 +19,6 @@
       </div>
     </div>
 
-    <!-- Note d'information -->
     <div class="m-6 mb-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
       <div class="flex items-start gap-3">
         <svg class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
@@ -33,53 +31,128 @@
       </div>
     </div>
 
-    <form method="post" action="/ui/projects/create" class="p-6 space-y-6">
+    <form method="post" action="/ui/projects/create" class="p-6 space-y-8">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
-      <div class="grid md:grid-cols-2 gap-6">
-        <div class="md:col-span-2">
-          <label class="block text-sm font-medium text-slate-700 mb-2">Nom du projet *</label>
-          <input type="text" name="name" required
-                 class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                 placeholder="Ex: Rénovation Immeuble Haussmann">
-        </div>
+      <!-- Informations de base -->
+      <div class="space-y-6">
+        <h3 class="text-lg font-semibold text-slate-900 border-b pb-2">Informations du projet</h3>
+        
+        <div class="grid md:grid-cols-2 gap-6">
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-slate-700 mb-2">Nom du projet *</label>
+            <input type="text" name="name" required
+                   class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="Ex: Rénovation Immeuble Haussmann">
+          </div>
 
-        <div class="md:col-span-2">
-          <label class="block text-sm font-medium text-slate-700 mb-2">Adresse *</label>
-          <input type="text" name="address" required
-                 class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                 placeholder="123 Rue de la Paix, 75001 Paris">
-        </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-slate-700 mb-2">Adresse du chantier *</label>
+            <input type="text" name="address" required
+                   class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="123 Rue de la Paix, 75001 Paris">
+          </div>
 
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-2">Lots / travaux</label>
-          <input type="text" name="works"
-                 class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                 placeholder="maçonnerie, électricité, peinture">
-        </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Référence de l'affaire</label>
+            <input type="text" name="project_reference"
+                   class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="REF-2025-001">
+          </div>
 
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-2">Entreprises</label>
-          <input type="text" name="companies"
-                 class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                 placeholder="Société A, Société B">
-        </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Téléphone du chantier</label>
+            <input type="tel" name="site_phone"
+                   class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="01 23 45 67 89">
+          </div>
 
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-2">Durée (semaines)</label>
-          <input type="number" name="duration_weeks" min="0" value="0"
-                 class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-        </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Durée (semaines)</label>
+            <input type="number" name="duration_weeks" min="0" value="0"
+                   class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
 
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-2">Effectif max</label>
-          <input type="number" name="workforce" min="0" value="0"
-                 class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Effectif maximum</label>
+            <input type="number" name="workforce" min="0" value="0"
+                   class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-slate-700 mb-2">Lots / travaux</label>
+            <input type="text" name="works"
+                   class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="maçonnerie, électricité, peinture">
+          </div>
+        </div>
+      </div>
+
+      <!-- Entreprise principale -->
+      <div class="space-y-6 pt-6 border-t">
+        <h3 class="text-lg font-semibold text-slate-900 border-b pb-2">Entreprise principale</h3>
+        
+        <div class="grid md:grid-cols-2 gap-6">
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-slate-700 mb-2">Nom de l'entreprise</label>
+            <input type="text" name="company_name"
+                   class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="SARL Construction Pro">
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-slate-700 mb-2">Adresse</label>
+            <input type="text" name="company_address"
+                   class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="10 Rue de l'Entreprise, 75001 Paris">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Téléphone</label>
+            <input type="tel" name="company_phone"
+                   class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="01 23 45 67 89">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">E-mail</label>
+            <input type="email" name="company_email"
+                   class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="contact@entreprise.com">
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-slate-700 mb-2">Responsable travaux</label>
+            <input type="text" name="site_manager_name"
+                   class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="Jean Dupont">
+          </div>
+        </div>
+      </div>
+
+      <!-- Maître d'ouvrage et Maître d'œuvre -->
+      <div class="space-y-6 pt-6 border-t">
+        <h3 class="text-lg font-semibold text-slate-900 border-b pb-2">Autres intervenants</h3>
+        
+        <div class="grid md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Maître d'ouvrage</label>
+            <input type="text" name="owner_name"
+                   class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="Société Propriétaire">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Maître d'œuvre</label>
+            <input type="text" name="architect_name"
+                   class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="Cabinet d'Architecture">
+          </div>
         </div>
       </div>
 
       <button type="submit"
-              class="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-lg shadow-blue-600/30 hover:shadow-blue-600/50 transition-all">
+              class="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-lg shadow-blue-600/30 hover:shadow-blue-600/50 transition-all">
         Créer le projet
       </button>
     </form>
