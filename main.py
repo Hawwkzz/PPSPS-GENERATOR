@@ -2201,6 +2201,16 @@ def _build_meta_hint(project: ProjectDB) -> dict:
         "work_hours": getattr(project, "work_hours", ""),
         "start_date": project.start_date.isoformat() if getattr(project, "start_date", None) else None,
         "end_date": project.end_date.isoformat() if getattr(project, "end_date", None) else None,
+        # Nouveaux champs du formulaire
+        "project_reference": getattr(project, "project_reference", ""),
+        "site_phone": getattr(project, "site_phone", ""),
+        "company_name": getattr(project, "company_name", ""),
+        "company_address": getattr(project, "company_address", ""),
+        "company_phone": getattr(project, "company_phone", ""),
+        "company_email": getattr(project, "company_email", ""),
+        "site_manager_name": getattr(project, "site_manager_name", ""),
+        "owner_name": getattr(project, "owner_name", ""),
+        "architect_name": getattr(project, "architect_name", ""),
     }
 
 def _build_evidence_pack(blob: str, project: ProjectDB) -> str:
@@ -2901,6 +2911,15 @@ def ui_create_project(
     duration_weeks: int = Form(0),
     workforce: int = Form(0),
     companies: str = Form(""),
+    project_reference: str = Form(""),
+    site_phone: str = Form(""),
+    company_name: str = Form(""),
+    company_address: str = Form(""),
+    company_phone: str = Form(""),
+    company_email: str = Form(""),
+    site_manager_name: str = Form(""),
+    owner_name: str = Form(""),
+    architect_name: str = Form(""),
     csrf_token: str = Form(...),
     session: Session = Depends(get_session),
     user: UserDB = Depends(require_login),
@@ -2908,14 +2927,23 @@ def ui_create_project(
     _check_csrf(request, csrf_token)
 
     pr = ProjectDB(
-    name=name.strip(),
-    address=address.strip(),
-    works_csv=",".join([w.strip() for w in works.split(",") if w.strip()]),
-    duration_weeks=duration_weeks or 0,
-    workforce=workforce or 0,
-    companies_csv=",".join([c.strip() for c in companies.split(",") if c.strip()]),
-    owner_id=user.id,
-)
+        name=name.strip(),
+        address=address.strip(),
+        works_csv=",".join([w.strip() for w in works.split(",") if w.strip()]),
+        duration_weeks=duration_weeks or 0,
+        workforce=workforce or 0,
+        companies_csv=",".join([c.strip() for c in companies.split(",") if c.strip()]),
+        project_reference=project_reference.strip(),
+        site_phone=site_phone.strip(),
+        company_name=company_name.strip(),
+        company_address=company_address.strip(),
+        company_phone=company_phone.strip(),
+        company_email=company_email.strip(),
+        site_manager_name=site_manager_name.strip(),
+        owner_name=owner_name.strip(),
+        architect_name=architect_name.strip(),
+        owner_id=user.id,
+    )
     session.add(pr)
     session.commit()
     session.refresh(pr)
