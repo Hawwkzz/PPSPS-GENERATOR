@@ -399,45 +399,52 @@ import json
 
 
 def replace_placeholders_in_doc(doc, placeholder_values):
-    """Remplace tous les placeholders dans un document DOCX."""
+    """Remplace tous les placeholders dans un document DOCX de manière robuste."""
     from docx import Document
+    
+    def replace_in_paragraph(paragraph, placeholder_values):
+        """Remplace les placeholders dans un paragraphe, même s'ils sont fragmentés."""
+        for key, value in placeholder_values.items():
+            if key in paragraph.text:
+                # Reconstruire le texte en fusionnant les runs
+                full_text = paragraph.text
+                new_text = full_text.replace(key, str(value) if value else "")
+                
+                # Si le texte a changé, remplacer tout le paragraphe
+                if new_text != full_text:
+                    # Garder le style du premier run
+                    first_run_style = paragraph.runs[0].style if paragraph.runs else None
+                    first_run_font = paragraph.runs[0].font if paragraph.runs else None
+                    
+                    # Supprimer tous les runs
+                    for _ in range(len(paragraph.runs)):
+                        paragraph._element.remove(paragraph.runs[0]._element)
+                    
+                    # Ajouter un nouveau run avec le texte remplacé
+                    new_run = paragraph.add_run(new_text)
+                    if first_run_style:
+                        new_run.style = first_run_style
     
     # Remplacer dans les paragraphes
     for paragraph in doc.paragraphs:
-        for key, value in placeholder_values.items():
-            if key in paragraph.text:
-                for run in paragraph.runs:
-                    if key in run.text:
-                        run.text = run.text.replace(key, str(value) if value else "")
+        replace_in_paragraph(paragraph, placeholder_values)
     
     # Remplacer dans les tableaux
     for table in doc.tables:
         for row in table.rows:
             for cell in row.cells:
                 for paragraph in cell.paragraphs:
-                    for key, value in placeholder_values.items():
-                        if key in paragraph.text:
-                            for run in paragraph.runs:
-                                if key in run.text:
-                                    run.text = run.text.replace(key, str(value) if value else "")
+                    replace_in_paragraph(paragraph, placeholder_values)
     
     # Remplacer dans les en-têtes et pieds de page
     for section in doc.sections:
         for header in [section.header]:
             for paragraph in header.paragraphs:
-                for key, value in placeholder_values.items():
-                    if key in paragraph.text:
-                        for run in paragraph.runs:
-                            if key in run.text:
-                                run.text = run.text.replace(key, str(value) if value else "")
+                replace_in_paragraph(paragraph, placeholder_values)
         
         for footer in [section.footer]:
             for paragraph in footer.paragraphs:
-                for key, value in placeholder_values.items():
-                    if key in paragraph.text:
-                        for run in paragraph.runs:
-                            if key in run.text:
-                                run.text = run.text.replace(key, str(value) if value else "")
+                replace_in_paragraph(paragraph, placeholder_values)
 
 class TemplateFiller:
     """Remplit intelligemment le template PPSPS avec les données du projet."""
@@ -669,8 +676,8 @@ Réponds en JSON avec cette structure EXACTE :
         return {
             "{{NOM_PROJET}}": self.form_data.get("name", ""),
             "{{ADRESSE_CHANTIER}}": self.form_data.get("address", ""),
-            "{{REFERENCE_AFFAIRE}}": self.form_data.get("reference", ""),
-            "{{TELEPHONE_CHANTIER}}": self.form_data.get("phone", ""),
+            "{{REFERENCE_AFFAIRE}}": self.form_data.get("project_reference", ""),
+            "{{TELEPHONE_CHANTIER}}": self.form_data.get("site_phone", ""),
             "{{DUREE_SEMAINES}}": str(self.form_data.get("duration_weeks", "")) if self.form_data.get("duration_weeks") else "",
             "{{EFFECTIF_MAXIMUM}}": str(self.form_data.get("workforce", "")) if self.form_data.get("workforce") else "",
             "{{LOTS_TRAVAUX}}": self.form_data.get("works_csv", ""),
@@ -678,9 +685,9 @@ Réponds en JSON avec cette structure EXACTE :
             "{{ADRESSE_ENTREPRISE}}": self.form_data.get("company_address", ""),
             "{{TELEPHONE_ENTREPRISE}}": self.form_data.get("company_phone", ""),
             "{{EMAIL_ENTREPRISE}}": self.form_data.get("company_email", ""),
-            "{{RESPONSABLE_TRAVAUX}}": self.form_data.get("site_manager", ""),
-            "{{MAITRE_OUVRAGE}}": self.form_data.get("owner", ""),
-            "{{MAITRE_OEUVRE}}": self.form_data.get("architect", ""),
+            "{{RESPONSABLE_TRAVAUX}}": self.form_data.get("site_manager_name", ""),
+            "{{MAITRE_OUVRAGE}}": self.form_data.get("owner_name", ""),
+            "{{MAITRE_OEUVRE}}": self.form_data.get("architect_name", ""),
         }
 
     def _fill_info_table(self, table, data: Dict):
@@ -2703,8 +2710,8 @@ def generate_ppsps_freeform(project_id: int, session: Session = Depends(get_sess
         form_data = {
             "name": proj.name or "",
             "address": proj.address or "",
-            "reference": getattr(proj, 'reference', "") or "",
-            "phone": getattr(proj, 'phone', "") or "",
+            "project_reference": getattr(proj, 'project_reference', "") or "",
+            "site_phone": getattr(proj, 'site_phone', "") or "",
             "duration_weeks": proj.duration_weeks or 0,
             "workforce": proj.workforce or 0,
             "works_csv": proj.works_csv or "",
@@ -2712,9 +2719,9 @@ def generate_ppsps_freeform(project_id: int, session: Session = Depends(get_sess
             "company_address": getattr(proj, 'company_address', "") or "",
             "company_phone": getattr(proj, 'company_phone', "") or "",
             "company_email": getattr(proj, 'company_email', "") or "",
-            "site_manager": getattr(proj, 'site_manager', "") or "",
-            "owner": getattr(proj, 'owner', "") or "",
-            "architect": getattr(proj, 'architect', "") or "",
+            "site_manager_name": getattr(proj, 'site_manager_name', "") or "",
+            "owner_name": getattr(proj, 'owner_name', "") or "",
+            "architect_name": getattr(proj, 'architect_name', "") or "",
         }
         
         filler = TemplateFiller(TEMPLATE_PATH, form_data=form_data)
@@ -3247,11 +3254,22 @@ async def ui_generate_doc(
     # 3) dispatcher par type
     k = kind.lower()
     if k in ("ppsps", "ppsps_freeform", "ppsps_docx"):
-        res = generate_ppsps_freeform(proj.id, session, user)
-        doc_id = res.get("document_id")
-        if not doc_id:
-            raise HTTPException(status_code=500, detail="Génération PPSPS échouée")
-        return export_docx_by_id(doc_id, session=session, user=user)
+        try:
+            res = generate_ppsps_freeform(proj.id, session, user)
+            doc_id = res.get("document_id")
+            if not doc_id:
+                raise HTTPException(status_code=500, detail="Génération PPSPS échouée")
+            return export_docx_by_id(doc_id, session=session, user=user)
+        except HTTPException as e:
+            # Si c'est une erreur 402 (jetons insuffisants), renvoyer du JSON
+            if e.status_code == 402:
+                from fastapi.responses import JSONResponse
+                return JSONResponse(
+                    status_code=402,
+                    content=e.detail
+                )
+            # Sinon, laisser l'exception se propager
+            raise
 
     raise HTTPException(status_code=400, detail="Type de doc inconnu (attendu: ppsps)")
 
