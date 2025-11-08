@@ -437,9 +437,6 @@ class TemplateFiller:
         # 4. Remplir le template avec les données
         self._fill_document(fill_data, img_catalog)
         
-        # 5. Ajouter le footer
-        self._add_footer()
-        
         return self.doc
     
     def _build_fill_prompt(self, project_data: Dict, evidence_pack: str, 
@@ -449,35 +446,15 @@ class TemplateFiller:
         return f"""Tu dois extraire et structurer les informations pour remplir un PPSPS.
 
 🎯 RÈGLE ABSOLUE : PRIORITÉ DES SOURCES
-1. **TOUJOURS utiliser EN PRIORITÉ les informations des PIÈCES UPLOADÉES** (extraits ci-dessous)
-2. Le **formulaire** sert de **FALLBACK** si l'info est absente des pièces
-4. **OBLIGATOIRE**: Remplir AU MINIMUM avec les données du formulaire si aucune info dans les pièces
-3. Si une info est trouvée dans les pièces, l'utiliser MÊME si le formulaire contient autre chose
+1. **TOUJOURS utiliser EN PRIORITÉ les informations du FORMULAIRE** (ci-dessous)
+2. Les **pièces uploadées** servent à **COMPLÉTER** les informations manquantes du formulaire
+3. Si une info est dans le formulaire, l'utiliser en priorité, sauf si les pièces contiennent des informations clairement plus précises ou complètes
 
-📄 PIÈCES UPLOADÉES (PRIORITÉ ABSOLUE) :
+📝 FORMULAIRE (PRIORITÉ ABSOLUE) :
+{json.dumps(project_data, ensure_ascii=False, indent=2)}
+
+📄 PIÈCES UPLOADÉES (COMPLÉMENT) :
 {evidence_pack}
-
-📝 DONNÉES DU FORMULAIRE (FALLBACK - TOUJOURS UTILISER SI PIÈCES VIDES) :
-ENTREPRISE :
-- Nom : {project_data.get('company_name', 'NON RENSEIGNÉ')}
-- Adresse : {project_data.get('company_address', 'NON RENSEIGNÉ')}
-- Téléphone : {project_data.get('company_phone', 'NON RENSEIGNÉ')}
-- Email : {project_data.get('company_email', 'NON RENSEIGNÉ')}
-- Chef de chantier : {project_data.get('site_manager_name', 'NON RENSEIGNÉ')}
-
-PROJET :
-- Nom : {project_data.get('project_name', 'NON RENSEIGNÉ')}
-- Adresse : {project_data.get('address', 'NON RENSEIGNÉ')}
-- Référence : {project_data.get('project_reference', 'NON RENSEIGNÉ')}
-- Téléphone chantier : {project_data.get('site_phone', 'NON RENSEIGNÉ')}
-- Durée : {project_data.get('duration_weeks', 0)} semaines
-- Effectif : {project_data.get('workforce', 0)} personnes
-- Travaux : {', '.join(project_data.get('works', []))}
-
-AUTRES INTERVENANTS :
-- Maître d'ouvrage : {project_data.get('owner_name', 'NON RENSEIGNÉ')}
-- Architecte : {project_data.get('architect_name', 'NON RENSEIGNÉ')}
-- CSPS : {project_data.get('csps_name', 'NON RENSEIGNÉ')}
 
 🖼️ IMAGES DISPONIBLES :
 {json.dumps(img_catalog, ensure_ascii=False, indent=2)}
@@ -580,13 +557,14 @@ Réponds en JSON avec cette structure EXACTE :
 }}
 
 ⚠️ RÈGLES IMPORTANTES :
-- Si une info n'est pas trouvée : laisser chaîne vide "" ou null
+- UTILISER EN PRIORITÉ les données du formulaire (company_name → nom_entreprise, company_phone → telephone, company_address → adresse, company_email → email, etc.)
+- Compléter avec les pièces uploadées uniquement si le formulaire ne contient pas l'information
+- Si une info n'est trouvée ni dans le formulaire ni dans les pièces : laisser chaîne vide "" ou null
 - Pour les téléphones : format exact trouvé dans les docs (ex: "01 23 45 67 89")
 - Pour les dates : format JJ/MM/AAAA
 - Pour les risques : être FACTUEL et PRÉCIS (pas de généralités)
 - Séparer les différents risques/phases avec des détails distincts
 - Pour les annexes : utiliser UNIQUEMENT les noms de fichiers du catalogue fourni
-- Si pas d'info dans les pièces ET dans le formulaire : laisser vide
 """
     
     def _fill_document(self, fill_data: Dict, img_catalog: List[Dict]):
@@ -634,12 +612,12 @@ Réponds en JSON avec cette structure EXACTE :
             chef = data.get("nom_chef_entreprise", "")
             
             new_text = (
-                f"Nom de l'entreprise : {nom if nom else '…' * 40}\n"
-                f"Tél. : {tel if tel else '…' * 20}\n"
-                f"Adresse : {adresse if adresse else '…' * 50}\n"
-                f"E-mail : {email if email else '…' * 30}\n"
-                f"Fax : {fax if fax else '…' * 30}\n"
-                f"Nom du Chef d'entreprise : {chef if chef else '…' * 40}"
+                f"Nom de l'entreprise : {nom}\n"
+                f"Tél. : {tel}\n"
+                f"Adresse : {adresse}\n"
+                f"E-mail : {email}\n"
+                f"Fax : {fax}\n"
+                f"Nom du Chef d'entreprise : {chef}"
             )
             
             cell.text = new_text
@@ -875,31 +853,6 @@ Réponds en JSON avec cette structure EXACTE :
                         # Si erreur, ajouter juste une mention
                         self.doc.add_paragraph(f"[Image : {img_name}]")
     
-
-    def _add_footer(self):
-        """Ajoute le footer avec l'email de contact."""
-        for section in self.doc.sections:
-            footer = section.footer
-            footer.is_linked_to_previous = False
-            
-            # Vider le footer existant
-            for paragraph in footer.paragraphs:
-                paragraph.clear()
-            
-            # Ajouter le nouveau footer
-            p = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
-            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            
-            # Texte du footer
-            run = p.add_run("Document généré par PPSPS Generator\n")
-            run.font.size = Pt(8)
-            run.font.color.rgb = RGBColor(100, 100, 100)
-            
-            run = p.add_run("contact@ppsps-generator.fr")
-            run.font.size = Pt(9)
-            run.font.color.rgb = RGBColor(0, 102, 204)
-            run.bold = True
-
     def _add_dotted_border(self, row):
         """Ajoute une bordure pointillée en bas d'une ligne de tableau."""
         tcPr = row.cells[0]._element.get_or_add_tcPr()
@@ -2320,8 +2273,7 @@ Objectif : produire un **PPSPS complet en français**, **au format Markdown**, q
 
 🚨 **RÈGLE ABSOLUE N°1 — PRIORITÉ DES SOURCES** 🚨
 1. **TOUJOURS utiliser EN PRIORITÉ les informations des PIÈCES UPLOADÉES** (extraits fournis ci-dessous)
-2. Le **formulaire** sert de **FALLBACK** si l'info est absente des pièces
-4. **OBLIGATOIRE**: Remplir AU MINIMUM avec les données du formulaire si aucune info dans les pièces
+2. Le **formulaire** sert UNIQUEMENT de **FALLBACK** si l'info est absente des pièces
 3. Si une entreprise/date/coordonnée est trouvée dans les pièces, ajoute la en plus des entreprises inscrites dans le formulaire sauf si tu reconnais le même nom d'entreprises.
 **Structure & Style**
 - Respecte les titres/numéros EXACTS de la trame (ne change rien)
@@ -2583,101 +2535,6 @@ def _docx_add_csv_table(doc, section: str, csv_text: str):
 # =====================================================================
 
 @app.post("/projects/{project_id}/generate_ppsps_freeform")
-
-
-def _filter_images_with_vision(img_catalog: List[Dict], openai_client, model: str) -> List[Dict]:
-    """
-    Filtre les images en utilisant la vision de l'IA pour ne garder que celles pertinentes.
-    Retourne une liste d'images pertinentes avec des tags.
-    """
-    if not img_catalog:
-        return []
-    
-    logger.info(f"[VISION] Filtrage de {len(img_catalog)} images...")
-    relevant_images = []
-    
-    for img in img_catalog:
-        stored_path = img.get("stored_path", "")
-        if not stored_path or not os.path.exists(stored_path):
-            continue
-        
-        try:
-            # Encoder l'image en base64
-            with open(stored_path, "rb") as f:
-                img_data = base64.b64encode(f.read()).decode()
-            
-            # Détecter le type MIME
-            mime_type = mimetypes.guess_type(stored_path)[0] or "image/png"
-            
-            # Demander à l'IA d'analyser l'image
-            messages = [
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": """Analyse cette image et détermine si elle est pertinente pour un PPSPS (Plan Particulier de Sécurité et Protection de la Santé).
-
-Réponds UNIQUEMENT en JSON avec cette structure:
-{
-  "pertinent": true/false,
-  "categorie": "plan_circulation" | "plan_levage" | "plan_reseaux" | "fds" | "vgp" | "autre",
-  "description": "brève description",
-  "confiance": 0.0-1.0
-}
-
-Catégories:
-- plan_circulation: plans de circulation sur chantier, PICH
-- plan_levage: plans de levage, zones de manutention
-- plan_reseaux: plans de réseaux enterrés, DICT-DT
-- fds: fiches de données de sécurité
-- vgp: certificats VGP, conformité échafaudages
-- autre: autres documents pertinents PPSPS
-
-Considère NON pertinent: photos personnelles, paysages, texte illisible, documents sans rapport avec la sécurité."""
-                        },
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:{mime_type};base64,{img_data}"
-                            }
-                        }
-                    ]
-                }
-            ]
-            
-            response = openai_client.chat.completions.create(
-                model=model,
-                temperature=0.1,
-                messages=messages,
-                max_tokens=300
-            )
-            
-            raw = response.choices[0].message.content.strip()
-            raw = raw.replace('```json', '').replace('```', '').strip()
-            analysis = json.loads(raw)
-            
-            # Ne garder que les images pertinentes avec une confiance >= 0.6
-            if analysis.get("pertinent") and analysis.get("confiance", 0) >= 0.6:
-                img_with_tags = img.copy()
-                img_with_tags["tags"] = [analysis.get("categorie", "autre")]
-                img_with_tags["description"] = analysis.get("description", "")
-                img_with_tags["confiance"] = analysis.get("confiance", 0)
-                relevant_images.append(img_with_tags)
-                
-                logger.info(f"[VISION] ✅ Conservée: {img.get('file')} - {analysis.get('categorie')} ({analysis.get('confiance')})")
-            else:
-                logger.info(f"[VISION] ❌ Rejetée: {img.get('file')} - confiance {analysis.get('confiance', 0)}")
-        
-        except Exception as e:
-            logger.warning(f"[VISION] ⚠️  Erreur analyse {img.get('file')}: {e}")
-            # En cas d'erreur, garder l'image par sécurité
-            relevant_images.append(img)
-    
-    logger.info(f"[VISION] Résultat: {len(relevant_images)}/{len(img_catalog)} images conservées")
-    return relevant_images
-
-
 def generate_ppsps_freeform(project_id: int, session: Session = Depends(get_session), 
                            user: UserDB = Depends(require_login)):
     """
@@ -2729,7 +2586,7 @@ def generate_ppsps_freeform(project_id: int, session: Session = Depends(get_sess
         ).order_by(AttachmentDB.created_at.asc())
     ).all()
     
-    img_catalog_raw = [
+    img_catalog = [
         {
             "file": img.filename,
             "stored_path": img.stored_path,
@@ -2738,12 +2595,7 @@ def generate_ppsps_freeform(project_id: int, session: Session = Depends(get_sess
         for img in all_images
     ]
     
-    logger.info(f"[IMG] {len(img_catalog_raw)} images trouvées, filtrage avec vision...")
-    
-    # Filtrer les images avec vision IA
-    img_catalog = _filter_images_with_vision(img_catalog_raw, client, OPENROUTER_DEFAULT_MODEL)
-    
-    logger.info(f"[IMG] {len(img_catalog)} images pertinentes conservées pour le projet {project_id}")
+    logger.info(f"[IMG] {len(img_catalog)} images disponibles pour le projet {project_id}")
 
     # Evidence depuis les pièces
     blob = _project_text_blob(session, project_id, limit_chars=80_000)
