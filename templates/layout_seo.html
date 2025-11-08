@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- SEO Meta Tags -->
-    <title>{{ meta.title if meta else 'PPSPS Generator â€“ GÃ©nÃ©ration automatique de PPSPS' }}</title>
-    <meta name="description" content="{{ meta.description if meta else 'GÃ©nÃ©rez automatiquement votre PPSPS avec notre IA. Solution rapide et conforme pour les professionnels du BTP.' }}">
-    <meta name="keywords" content="{{ meta.keywords if meta else 'PPSPS, gÃ©nÃ©ration PPSPS, IA BTP, prÃ©vention chantier' }}">
+    <title>{{ meta.title if meta else 'PPSPS Generator — Génération automatique de PPSPS' }}</title>
+    <meta name="description" content="{{ meta.description if meta else 'Générez automatiquement votre PPSPS avec notre IA. Solution rapide et conforme pour les professionnels du BTP.' }}">
+    <meta name="keywords" content="{{ meta.keywords if meta else 'PPSPS, génération PPSPS, IA BTP, prévention chantier' }}">
     <meta name="robots" content="{{ meta.robots if meta else 'index, follow' }}">
     <meta name="author" content="PPSPS Generator">
     {% if meta and meta.canonical %}
@@ -18,7 +18,7 @@
     <meta property="og:type" content="{{ meta.og_type if meta else 'website' }}">
     <meta property="og:url" content="{{ meta.og_url if meta else request.url }}">
     <meta property="og:title" content="{{ meta.og_title if meta else 'PPSPS Generator' }}">
-    <meta property="og:description" content="{{ meta.og_description if meta else 'GÃ©nÃ©ration automatique de PPSPS par IA' }}">
+    <meta property="og:description" content="{{ meta.og_description if meta else 'Génération automatique de PPSPS par IA' }}">
     <meta property="og:image" content="{{ meta.og_image if meta else '/static/og-image.jpg' }}">
     <meta property="og:site_name" content="PPSPS Generator">
     <meta property="og:locale" content="fr_FR">
@@ -27,7 +27,7 @@
     <meta name="twitter:card" content="{{ meta.twitter_card if meta else 'summary_large_image' }}">
     <meta name="twitter:url" content="{{ meta.og_url if meta else request.url }}">
     <meta name="twitter:title" content="{{ meta.twitter_title if meta else 'PPSPS Generator' }}">
-    <meta name="twitter:description" content="{{ meta.twitter_description if meta else 'GÃ©nÃ©ration automatique de PPSPS' }}">
+    <meta name="twitter:description" content="{{ meta.twitter_description if meta else 'Génération automatique de PPSPS' }}">
     <meta name="twitter:image" content="{{ meta.twitter_image if meta else '/static/og-image.jpg' }}">
     {% if meta and meta.twitter_site %}
     <meta name="twitter:site" content="{{ meta.twitter_site }}">
@@ -65,7 +65,7 @@
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
       }
 
-      /* AmÃ©lioration de l'accessibilitÃ© */
+      /* Amélioration de l'accessibilité */
       .skip-to-content {
         position: absolute;
         left: -9999px;
@@ -81,7 +81,7 @@
         border-radius: 0.5rem;
       }
 
-      /* Animations personnalisÃ©es */
+      /* Animations personnalisées */
       @keyframes fadeIn {
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
@@ -107,7 +107,7 @@
           <!-- Logo -->
           <a href="{{ '/ui/projects' if is_auth else '/' }}"
              class="flex items-center gap-3 group transition-transform hover:scale-105"
-             aria-label="Retour Ã  l'accueil">
+             aria-label="Retour à l'accueil">
             <div class="p-2 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg shadow-blue-600/20 group-hover:shadow-blue-600/40 transition-all">
               <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -115,7 +115,7 @@
             </div>
             <div>
               <span class="block text-lg font-bold text-slate-900">PPSPS Generator</span>
-              <span class="block text-xs text-slate-500">GÃ©nÃ©ration intelligente</span>
+              <span class="block text-xs text-slate-500">Génération intelligente</span>
             </div>
           </a>
 
@@ -144,7 +144,7 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                 </svg>
-                <span class="hidden sm:inline">DÃ©connexion</span>
+                <span class="hidden sm:inline">Déconnexion</span>
               </button>
             </form>
           </nav>
@@ -155,7 +155,7 @@
             </a>
             <a href="/register"
                class="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 font-medium shadow-lg shadow-blue-600/30 hover:shadow-blue-600/50 transition-all">
-              CrÃ©er un compte
+              Créer un compte
             </a>
           </nav>
           {% endif %}
@@ -168,11 +168,6 @@
       {% block content %}{% endblock %}
     </main>
 
-    <!-- Footer -->
-
-    {% block scripts %}{% endblock %}
-  </body>
-</html>
     <!-- Footer -->
     <footer class="bg-white/60 backdrop-blur-sm border-t border-slate-200/60 py-8 mt-12">
       <div class="max-w-7xl mx-auto px-4">
