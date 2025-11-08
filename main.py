@@ -446,15 +446,15 @@ class TemplateFiller:
         return f"""Tu dois extraire et structurer les informations pour remplir un PPSPS.
 
 🎯 RÈGLE ABSOLUE : PRIORITÉ DES SOURCES
-1. **TOUJOURS utiliser EN PRIORITÉ les informations du FORMULAIRE** (ci-dessous)
-2. Les **pièces uploadées** servent à **COMPLÉTER** les informations manquantes du formulaire
-3. Si une info est dans le formulaire, l'utiliser en priorité, sauf si les pièces contiennent des informations clairement plus précises ou complètes
+1. **TOUJOURS utiliser EN PRIORITÉ les informations des PIÈCES UPLOADÉES** (extraits ci-dessous)
+2. Le **formulaire** sert UNIQUEMENT de **FALLBACK** si l'info est absente des pièces
+3. Si une info est trouvée dans les pièces, l'utiliser MÊME si le formulaire contient autre chose
 
-📝 FORMULAIRE (PRIORITÉ ABSOLUE) :
-{json.dumps(project_data, ensure_ascii=False, indent=2)}
-
-📄 PIÈCES UPLOADÉES (COMPLÉMENT) :
+📄 PIÈCES UPLOADÉES (PRIORITÉ ABSOLUE) :
 {evidence_pack}
+
+📝 FORMULAIRE (FALLBACK UNIQUEMENT) :
+{json.dumps(project_data, ensure_ascii=False, indent=2)}
 
 🖼️ IMAGES DISPONIBLES :
 {json.dumps(img_catalog, ensure_ascii=False, indent=2)}
@@ -557,14 +557,13 @@ Réponds en JSON avec cette structure EXACTE :
 }}
 
 ⚠️ RÈGLES IMPORTANTES :
-- UTILISER EN PRIORITÉ les données du formulaire (company_name → nom_entreprise, company_phone → telephone, company_address → adresse, company_email → email, etc.)
-- Compléter avec les pièces uploadées uniquement si le formulaire ne contient pas l'information
-- Si une info n'est trouvée ni dans le formulaire ni dans les pièces : laisser chaîne vide "" ou null
+- Si une info n'est pas trouvée : laisser chaîne vide "" ou null
 - Pour les téléphones : format exact trouvé dans les docs (ex: "01 23 45 67 89")
 - Pour les dates : format JJ/MM/AAAA
 - Pour les risques : être FACTUEL et PRÉCIS (pas de généralités)
 - Séparer les différents risques/phases avec des détails distincts
 - Pour les annexes : utiliser UNIQUEMENT les noms de fichiers du catalogue fourni
+- Si pas d'info dans les pièces ET dans le formulaire : laisser vide
 """
     
     def _fill_document(self, fill_data: Dict, img_catalog: List[Dict]):
@@ -612,12 +611,12 @@ Réponds en JSON avec cette structure EXACTE :
             chef = data.get("nom_chef_entreprise", "")
             
             new_text = (
-                f"Nom de l'entreprise : {nom}\n"
-                f"Tél. : {tel}\n"
-                f"Adresse : {adresse}\n"
-                f"E-mail : {email}\n"
-                f"Fax : {fax}\n"
-                f"Nom du Chef d'entreprise : {chef}"
+                f"Nom de l'entreprise : {nom if nom else '…' * 40}\n"
+                f"Tél. : {tel if tel else '…' * 20}\n"
+                f"Adresse : {adresse if adresse else '…' * 50}\n"
+                f"E-mail : {email if email else '…' * 30}\n"
+                f"Fax : {fax if fax else '…' * 30}\n"
+                f"Nom du Chef d'entreprise : {chef if chef else '…' * 40}"
             )
             
             cell.text = new_text
@@ -3351,3 +3350,4 @@ def debug():
 @app.get("/healthz")
 def healthz():
     return {"ok": True}
+
