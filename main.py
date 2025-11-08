@@ -446,14 +446,14 @@ class TemplateFiller:
         return f"""Tu dois extraire et structurer les informations pour remplir un PPSPS.
 
 🎯 RÈGLE ABSOLUE : PRIORITÉ DES SOURCES
-1. **TOUJOURS utiliser EN PRIORITÉ les informations des PIÈCES UPLOADÉES** (extraits ci-dessous)
-2. Le **formulaire** sert UNIQUEMENT de **FALLBACK** si l'info est absente des pièces
-3. Si une info est trouvée dans les pièces, l'utiliser MÊME si le formulaire contient autre chose
+1. **TOUJOURS utiliser EN PRIORITÉ les informations des DOCUMENTS UPLOADÉS** (PGC, DUER, Plans...)
+2. Le **FORMULAIRE** remplit UNIQUEMENT les **INFORMATIONS GÉNÉRALES** (nom entreprise, tél, adresse, email, fax, chef entreprise)
+3. Utiliser le FORMULAIRE en priorité pour les infos générales, les DOCS pour TOUT LE RESTE
 
-📄 PIÈCES UPLOADÉES (PRIORITÉ ABSOLUE) :
+📄 DOCUMENTS UPLOADÉS (PRIORITÉ pour risques, mesures, organismes, etc.) :
 {evidence_pack}
 
-📝 FORMULAIRE (FALLBACK UNIQUEMENT) :
+📝 FORMULAIRE (Utilisé pour remplir les INFORMATIONS GÉNÉRALES uniquement) :
 {json.dumps(project_data, ensure_ascii=False, indent=2)}
 
 🖼️ IMAGES DISPONIBLES :
@@ -557,13 +557,20 @@ Réponds en JSON avec cette structure EXACTE :
 }}
 
 ⚠️ RÈGLES IMPORTANTES :
-- Si une info n'est pas trouvée : laisser chaîne vide "" ou null
+- Pour "informations_generales" : TOUJOURS utiliser les données du FORMULAIRE en priorité :
+  * company_name → nom_entreprise
+  * company_phone → telephone  
+  * company_address → adresse
+  * company_email → email
+  * site_manager_name → nom_chef_entreprise
+  * MAPPER DIRECTEMENT ces champs du formulaire vers le JSON
+- Pour TOUT LE RESTE (risques, mesures, organismes, etc.) : utiliser les DOCUMENTS uploadés
+- Si une info du formulaire est vide, chercher dans les docs en complément
 - Pour les téléphones : format exact trouvé dans les docs (ex: "01 23 45 67 89")
 - Pour les dates : format JJ/MM/AAAA
 - Pour les risques : être FACTUEL et PRÉCIS (pas de généralités)
 - Séparer les différents risques/phases avec des détails distincts
 - Pour les annexes : utiliser UNIQUEMENT les noms de fichiers du catalogue fourni
-- Si pas d'info dans les pièces ET dans le formulaire : laisser vide
 """
     
     def _fill_document(self, fill_data: Dict, img_catalog: List[Dict]):
@@ -611,12 +618,12 @@ Réponds en JSON avec cette structure EXACTE :
             chef = data.get("nom_chef_entreprise", "")
             
             new_text = (
-                f"Nom de l'entreprise : {nom if nom else '…' * 40}\n"
-                f"Tél. : {tel if tel else '…' * 20}\n"
-                f"Adresse : {adresse if adresse else '…' * 50}\n"
-                f"E-mail : {email if email else '…' * 30}\n"
-                f"Fax : {fax if fax else '…' * 30}\n"
-                f"Nom du Chef d'entreprise : {chef if chef else '…' * 40}"
+                f"Nom de l'entreprise : {nom}\n"
+                f"Tél. : {tel}\n"
+                f"Adresse : {adresse}\n"
+                f"E-mail : {email}\n"
+                f"Fax : {fax}\n"
+                f"Nom du Chef d'entreprise : {chef}"
             )
             
             cell.text = new_text
@@ -3350,4 +3357,3 @@ def debug():
 @app.get("/healthz")
 def healthz():
     return {"ok": True}
-
