@@ -27,9 +27,9 @@
           </svg>
         </div>
         <div class="text-sm text-amber-900">
-          <p class="font-bold text-base mb-2">⚠️ Important : Document à réviser obligatoirement</p>
+          <p class="font-bold text-base mb-2">âš ï¸ Important : Document Ã  réviser obligatoirement</p>
           <p class="mb-2">Le PPSPS généré est une <strong>ébauche automatisée</strong> qui nécessite impérativement une <strong>révision et validation humaine</strong> par un professionnel qualifié (coordonnateur SPS, responsable travaux, etc.) avant toute utilisation sur chantier.</p>
-          <p class="text-xs">PPSPS Generator décline toute responsabilité en cas d'utilisation d'un document non préalablement contrôlé, modifié et validé par un expert compétent. Ce service est un outil d'aide à la rédaction, non un substitut au jugement professionnel.</p>
+          <p class="text-xs">PPSPS Generator décline toute responsabilité en cas d'utilisation d'un document non préalablement contrôlé, modifié et validé par un expert compétent. Ce service est un outil d'aide Ã  la rédaction, non un substitut au jugement professionnel.</p>
         </div>
       </div>
     </div>
@@ -53,10 +53,6 @@
       <form method="post" action="/ui/projects/{{ p.id }}/files/upload" enctype="multipart/form-data" class="p-5 space-y-4">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         
-        <p class="text-sm text-slate-700 mb-3">
-          <strong>📄 Téléversez vos documents</strong> (PGC, DUER, Plans) pour aider à la construction du PPSPS.
-        </p>
-
         <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 hover:border-blue-400 transition-colors">
           <input type="file" name="file" accept=".pdf,.docx,.txt,.md,.png,.jpg,.jpeg" required
                  class="block w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"/>
@@ -88,16 +84,6 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         {% set has_files = files|length > 0 %}
         
-        <p class="text-sm text-slate-700 mb-3">
-          <strong>⚡ Générez votre PPSPS</strong> en un clic une fois vos documents PGC, DUER et Plans uploadés.
-        </p>
-        
-        <div class="border-2 border-blue-200 bg-blue-50 rounded-lg p-6">
-          <p class="text-sm text-slate-700 text-center">
-            Cliquez sur le bouton ci-dessous pour lancer la génération automatique de votre PPSPS.
-          </p>
-        </div>
-        
         <button 
           type="submit" 
           id="gen-button"
@@ -115,7 +101,7 @@
         </button>
 
         <p class="text-xs text-slate-500 text-center">
-          {{ 'Le document sera généré à partir des pièces uploadées. Cela peut prendre plusieurs minutes.' if has_files else 'Ajoutez au moins une pièce pour activer la génération.' }}
+          {{ 'Le document sera généré Ã  partir des pièces uploadées. Cela peut prendre plusieurs minutes.' if has_files else 'Ajoutez au moins une pièce pour activer la génération.' }}
         </p>
       </form>
     </div>
