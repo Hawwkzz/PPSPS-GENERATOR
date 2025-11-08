@@ -22,6 +22,25 @@ logger = logging.getLogger("sps")
 if not logger.handlers:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
+# ===== PLACEHOLDERS FORMULAIRE =====
+FORM_PLACEHOLDERS = {
+    "{{NOM_PROJET}}": "",
+    "{{ADRESSE_CHANTIER}}": "",
+    "{{REFERENCE_AFFAIRE}}": "",
+    "{{TELEPHONE_CHANTIER}}": "",
+    "{{DUREE_SEMAINES}}": "",
+    "{{EFFECTIF_MAXIMUM}}": "",
+    "{{LOTS_TRAVAUX}}": "",
+    "{{NOM_ENTREPRISE}}": "",
+    "{{ADRESSE_ENTREPRISE}}": "",
+    "{{TELEPHONE_ENTREPRISE}}": "",
+    "{{EMAIL_ENTREPRISE}}": "",
+    "{{RESPONSABLE_TRAVAUX}}": "",
+    "{{MAITRE_OUVRAGE}}": "",
+    "{{MAITRE_OEUVRE}}": ""
+}
+
+
 
 # ===== FastAPI / Starlette =====
 from fastapi import FastAPI, Body, Request, Form, Depends, HTTPException, UploadFile, File
@@ -379,16 +398,59 @@ import re
 import json
 
 
+def replace_placeholders_in_doc(doc, placeholder_values):
+    """Remplace tous les placeholders dans un document DOCX."""
+    from docx import Document
+    
+    # Remplacer dans les paragraphes
+    for paragraph in doc.paragraphs:
+        for key, value in placeholder_values.items():
+            if key in paragraph.text:
+                for run in paragraph.runs:
+                    if key in run.text:
+                        run.text = run.text.replace(key, str(value) if value else "")
+    
+    # Remplacer dans les tableaux
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for paragraph in cell.paragraphs:
+                    for key, value in placeholder_values.items():
+                        if key in paragraph.text:
+                            for run in paragraph.runs:
+                                if key in run.text:
+                                    run.text = run.text.replace(key, str(value) if value else "")
+    
+    # Remplacer dans les en-têtes et pieds de page
+    for section in doc.sections:
+        for header in [section.header]:
+            for paragraph in header.paragraphs:
+                for key, value in placeholder_values.items():
+                    if key in paragraph.text:
+                        for run in paragraph.runs:
+                            if key in run.text:
+                                run.text = run.text.replace(key, str(value) if value else "")
+        
+        for footer in [section.footer]:
+            for paragraph in footer.paragraphs:
+                for key, value in placeholder_values.items():
+                    if key in paragraph.text:
+                        for run in paragraph.runs:
+                            if key in run.text:
+                                run.text = run.text.replace(key, str(value) if value else "")
+
 class TemplateFiller:
     """Remplit intelligemment le template PPSPS avec les données du projet."""
     
-    def __init__(self, template_path: str):
+    def __init__(self, template_path: str, form_data: dict = None):
         """
         Args:
             template_path: Chemin vers le template DOCX original
+            form_data: Données du formulaire pour les placeholders
         """
         self.template_path = template_path
         self.doc = Document(template_path)
+        self.form_data = form_data or {}
         
     def fill_with_ai(self, project_data: Dict[str, Any], evidence_pack: str, 
                      img_catalog: List[Dict], openai_client, model: str) -> Document:
@@ -405,6 +467,10 @@ class TemplateFiller:
         Returns:
             Document DOCX rempli
         """
+        # 0. Remplacer les placeholders du formulaire AVANT l'IA
+        placeholder_values = self._prepare_placeholder_values()
+        replace_placeholders_in_doc(self.doc, placeholder_values)
+        
         # 1. Créer le prompt pour l'IA
         prompt = self._build_fill_prompt(project_data, evidence_pack, img_catalog)
         
@@ -446,14 +512,14 @@ class TemplateFiller:
         return f"""Tu dois extraire et structurer les informations pour remplir un PPSPS.
 
 🎯 RÈGLE ABSOLUE : PRIORITÉ DES SOURCES
-1. **TOUJOURS utiliser EN PRIORITÉ les informations des DOCUMENTS UPLOADÉS** (PGC, DUER, Plans...)
-2. Le **FORMULAIRE** remplit UNIQUEMENT les **INFORMATIONS GÉNÉRALES** (nom entreprise, tél, adresse, email, fax, chef entreprise)
-3. Utiliser le FORMULAIRE en priorité pour les infos générales, les DOCS pour TOUT LE RESTE
+1. **TOUJOURS utiliser EN PRIORITÉ les informations des PIÈCES UPLOADÉES** (extraits ci-dessous)
+2. Le **formulaire** sert UNIQUEMENT de **FALLBACK** si l'info est absente des pièces
+3. Si une info est trouvée dans les pièces, l'utiliser MÊME si le formulaire contient autre chose
 
-📄 DOCUMENTS UPLOADÉS (PRIORITÉ pour risques, mesures, organismes, etc.) :
+📄 PIÈCES UPLOADÉES (PRIORITÉ ABSOLUE) :
 {evidence_pack}
 
-📝 FORMULAIRE (Utilisé pour remplir les INFORMATIONS GÉNÉRALES uniquement) :
+📝 FORMULAIRE (FALLBACK UNIQUEMENT) :
 {json.dumps(project_data, ensure_ascii=False, indent=2)}
 
 🖼️ IMAGES DISPONIBLES :
@@ -557,20 +623,13 @@ Réponds en JSON avec cette structure EXACTE :
 }}
 
 ⚠️ RÈGLES IMPORTANTES :
-- Pour "informations_generales" : TOUJOURS utiliser les données du FORMULAIRE en priorité :
-  * company_name → nom_entreprise
-  * company_phone → telephone  
-  * company_address → adresse
-  * company_email → email
-  * site_manager_name → nom_chef_entreprise
-  * MAPPER DIRECTEMENT ces champs du formulaire vers le JSON
-- Pour TOUT LE RESTE (risques, mesures, organismes, etc.) : utiliser les DOCUMENTS uploadés
-- Si une info du formulaire est vide, chercher dans les docs en complément
+- Si une info n'est pas trouvée : laisser chaîne vide "" ou null
 - Pour les téléphones : format exact trouvé dans les docs (ex: "01 23 45 67 89")
 - Pour les dates : format JJ/MM/AAAA
 - Pour les risques : être FACTUEL et PRÉCIS (pas de généralités)
 - Séparer les différents risques/phases avec des détails distincts
 - Pour les annexes : utiliser UNIQUEMENT les noms de fichiers du catalogue fourni
+- Si pas d'info dans les pièces ET dans le formulaire : laisser vide
 """
     
     def _fill_document(self, fill_data: Dict, img_catalog: List[Dict]):
@@ -604,6 +663,26 @@ Réponds en JSON avec cette structure EXACTE :
         # 7. Ajouter les annexes à la fin
         self._add_annexes(fill_data.get("annexes", []), img_catalog)
     
+    
+    def _prepare_placeholder_values(self) -> dict:
+        """Prépare les valeurs des placeholders à partir des données du formulaire."""
+        return {
+            "{{NOM_PROJET}}": self.form_data.get("name", ""),
+            "{{ADRESSE_CHANTIER}}": self.form_data.get("address", ""),
+            "{{REFERENCE_AFFAIRE}}": self.form_data.get("reference", ""),
+            "{{TELEPHONE_CHANTIER}}": self.form_data.get("phone", ""),
+            "{{DUREE_SEMAINES}}": str(self.form_data.get("duration_weeks", "")) if self.form_data.get("duration_weeks") else "",
+            "{{EFFECTIF_MAXIMUM}}": str(self.form_data.get("workforce", "")) if self.form_data.get("workforce") else "",
+            "{{LOTS_TRAVAUX}}": self.form_data.get("works_csv", ""),
+            "{{NOM_ENTREPRISE}}": self.form_data.get("company_name", ""),
+            "{{ADRESSE_ENTREPRISE}}": self.form_data.get("company_address", ""),
+            "{{TELEPHONE_ENTREPRISE}}": self.form_data.get("company_phone", ""),
+            "{{EMAIL_ENTREPRISE}}": self.form_data.get("company_email", ""),
+            "{{RESPONSABLE_TRAVAUX}}": self.form_data.get("site_manager", ""),
+            "{{MAITRE_OUVRAGE}}": self.form_data.get("owner", ""),
+            "{{MAITRE_OEUVRE}}": self.form_data.get("architect", ""),
+        }
+
     def _fill_info_table(self, table, data: Dict):
         """Remplit le tableau d'informations générales (TABLE 0)."""
         if len(table.rows) > 0 and len(table.rows[0].cells) > 0:
@@ -618,12 +697,12 @@ Réponds en JSON avec cette structure EXACTE :
             chef = data.get("nom_chef_entreprise", "")
             
             new_text = (
-                f"Nom de l'entreprise : {nom}\n"
-                f"Tél. : {tel}\n"
-                f"Adresse : {adresse}\n"
-                f"E-mail : {email}\n"
-                f"Fax : {fax}\n"
-                f"Nom du Chef d'entreprise : {chef}"
+                f"Nom de l'entreprise : {nom if nom else '…' * 40}\n"
+                f"Tél. : {tel if tel else '…' * 20}\n"
+                f"Adresse : {adresse if adresse else '…' * 50}\n"
+                f"E-mail : {email if email else '…' * 30}\n"
+                f"Fax : {fax if fax else '…' * 30}\n"
+                f"Nom du Chef d'entreprise : {chef if chef else '…' * 40}"
             )
             
             cell.text = new_text
@@ -2620,7 +2699,25 @@ def generate_ppsps_freeform(project_id: int, session: Session = Depends(get_sess
     
     # Utiliser le TemplateFiller pour remplir le template
     try:
-        filler = TemplateFiller(TEMPLATE_PATH)
+        # Préparer les données du formulaire pour les placeholders
+        form_data = {
+            "name": proj.name or "",
+            "address": proj.address or "",
+            "reference": getattr(proj, 'reference', "") or "",
+            "phone": getattr(proj, 'phone', "") or "",
+            "duration_weeks": proj.duration_weeks or 0,
+            "workforce": proj.workforce or 0,
+            "works_csv": proj.works_csv or "",
+            "company_name": getattr(proj, 'company_name', "") or "",
+            "company_address": getattr(proj, 'company_address', "") or "",
+            "company_phone": getattr(proj, 'company_phone', "") or "",
+            "company_email": getattr(proj, 'company_email', "") or "",
+            "site_manager": getattr(proj, 'site_manager', "") or "",
+            "owner": getattr(proj, 'owner', "") or "",
+            "architect": getattr(proj, 'architect', "") or "",
+        }
+        
+        filler = TemplateFiller(TEMPLATE_PATH, form_data=form_data)
         filled_doc = filler.fill_with_ai(
             project_data=meta_hint,
             evidence_pack=evidence,
