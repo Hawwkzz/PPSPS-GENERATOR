@@ -3,7 +3,7 @@
 {% block content %}
 <div class="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
 
-  <!-- En-tÃªte -->
+  <!-- En-tête -->
   <header class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
     <div>
       <h1 class="text-3xl font-bold text-slate-900">{{ p.name }}</h1>
@@ -17,7 +17,7 @@
     </a>
   </header>
 
-  <!-- Disclaimer de responsabilitÃ© -->
+  <!-- Disclaimer de responsabilité -->
   <section class="bg-amber-50 border-l-4 border-amber-500 rounded-r-xl overflow-hidden">
     <div class="p-5">
       <div class="flex items-start gap-4">
@@ -27,9 +27,9 @@
           </svg>
         </div>
         <div class="text-sm text-amber-900">
-          <p class="font-bold text-base mb-2">âš ï¸ Important : Document Ã  rÃ©viser obligatoirement</p>
-          <p class="mb-2">Le PPSPS gÃ©nÃ©rÃ© est une <strong>Ã©bauche automatisÃ©e</strong> qui nÃ©cessite impÃ©rativement une <strong>rÃ©vision et validation humaine</strong> par un professionnel qualifiÃ© (coordonnateur SPS, responsable travaux, etc.) avant toute utilisation sur chantier.</p>
-          <p class="text-xs">PPSPS Generator dÃ©cline toute responsabilitÃ© en cas d'utilisation d'un document non prÃ©alablement contrÃ´lÃ©, modifiÃ© et validÃ© par un expert compÃ©tent. Ce service est un outil d'aide Ã  la rÃ©daction, non un substitut au jugement professionnel.</p>
+          <p class="font-bold text-base mb-2">⚠️ Important : Document à réviser obligatoirement</p>
+          <p class="mb-2">Le PPSPS généré est une <strong>ébauche automatisée</strong> qui nécessite impérativement une <strong>révision et validation humaine</strong> par un professionnel qualifié (coordonnateur SPS, responsable travaux, etc.) avant toute utilisation sur chantier.</p>
+          <p class="text-xs">PPSPS Generator décline toute responsabilité en cas d'utilisation d'un document non préalablement contrôlé, modifié et validé par un expert compétent. Ce service est un outil d'aide à la rédaction, non un substitut au jugement professionnel.</p>
         </div>
       </div>
     </div>
@@ -54,7 +54,7 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         
         <p class="text-sm text-slate-700 mb-3">
-          <strong>📄 Téléversez ici votre PGC, DUER, Plans</strong> afin d'aider à la construction du PPSPS, ensuite appuyez sur Générer.
+          <strong>📄 Téléversez vos documents</strong> (PGC, DUER, Plans) pour aider à la construction du PPSPS.
         </p>
 
         <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 hover:border-blue-400 transition-colors">
@@ -67,11 +67,11 @@
           Uploader
         </button>
 
-        <p class="text-xs text-slate-500 text-center">PDF, DOCX, TXT, MD, PNG, JPG acceptÃ©s</p>
+        <p class="text-xs text-slate-500 text-center">PDF, DOCX, TXT, MD, PNG, JPG acceptés</p>
       </form>
     </div>
 
-    <!-- GÃ©nÃ©rer PPSPS avec loading amÃ©liorÃ© -->
+    <!-- Générer PPSPS avec loading amélioré -->
     <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
       <div class="bg-gradient-to-r from-blue-50 to-blue-100/50 border-b border-blue-200 p-5">
         <div class="flex items-center gap-3">
@@ -80,7 +80,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
             </svg>
           </div>
-          <h2 class="text-lg font-bold text-slate-900">GÃ©nÃ©rer votre PPSPS</h2>
+          <h2 class="text-lg font-bold text-slate-900">Générer votre PPSPS</h2>
         </div>
       </div>
 
@@ -89,8 +89,14 @@
         {% set has_files = files|length > 0 %}
         
         <p class="text-sm text-slate-700 mb-3">
-          Une fois vos documents uploadés, cliquez sur le bouton ci-dessous pour lancer la génération automatique de votre PPSPS.
+          <strong>⚡ Générez votre PPSPS</strong> en un clic une fois vos documents PGC, DUER et Plans uploadés.
         </p>
+        
+        <div class="border-2 border-blue-200 bg-blue-50 rounded-lg p-6">
+          <p class="text-sm text-slate-700 text-center">
+            Cliquez sur le bouton ci-dessous pour lancer la génération automatique de votre PPSPS.
+          </p>
+        </div>
         
         <button 
           type="submit" 
@@ -98,18 +104,18 @@
           {{ 'disabled' if not has_files else '' }}
           class="w-full py-3 rounded-lg font-semibold transition-all relative overflow-hidden {{ 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-600/30 hover:shadow-blue-600/50' if has_files else 'bg-slate-200 text-slate-400 cursor-not-allowed' }}"
         >
-          <span class="btn-text">GÃ©nÃ©rer le PPSPS</span>
+          <span class="btn-text">Générer le PPSPS</span>
           <span class="btn-loading hidden absolute inset-0 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700">
             <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <span class="text-white font-semibold">GÃ©nÃ©ration en cours...</span>
+            <span class="text-white font-semibold">Génération en cours...</span>
           </span>
         </button>
 
         <p class="text-xs text-slate-500 text-center">
-          {{ 'Le document sera gÃ©nÃ©rÃ© Ã  partir des piÃ¨ces uploadÃ©es. Cela peut prendre plusieurs minutes.' if has_files else 'Ajoutez au moins une piÃ¨ce pour activer la gÃ©nÃ©ration.' }}
+          {{ 'Le document sera généré à partir des pièces uploadées. Cela peut prendre plusieurs minutes.' if has_files else 'Ajoutez au moins une pièce pour activer la génération.' }}
         </p>
       </form>
     </div>
@@ -145,7 +151,7 @@
         <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
         </svg>
-        <div class="text-xs font-semibold text-slate-500 uppercase">DurÃ©e</div>
+        <div class="text-xs font-semibold text-slate-500 uppercase">Durée</div>
       </div>
       <div class="font-semibold text-slate-900 text-2xl">{{ p.duration_weeks or 0 }} sem.</div>
     </div>
@@ -187,7 +193,7 @@
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                   </svg>
-                  TÃ©lÃ©charger
+                  Télécharger
                 </a>
                 <button data-file-id="{{ f.id }}" class="js-del-file p-2 border-2 border-red-200 text-red-600 rounded-lg hover:bg-red-50 hover:border-red-300 transition-all">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -213,14 +219,14 @@
     </div>
   </section>
 
-  <!-- Documents gÃ©nÃ©rÃ©s -->
+  <!-- Documents générés -->
   <section class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
     <div class="bg-gradient-to-r from-slate-50 to-slate-100/50 border-b border-slate-200 p-6">
       <div class="flex items-center gap-3">
         <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
-        <h2 class="text-xl font-bold text-slate-900">Documents gÃ©nÃ©rÃ©s</h2>
+        <h2 class="text-xl font-bold text-slate-900">Documents générés</h2>
         <span class="ml-auto px-3 py-1 bg-slate-200 text-slate-700 rounded-full text-sm font-semibold">
           {{ docs|length }}
         </span>
@@ -265,7 +271,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
               </svg>
               <p class="text-slate-500 font-medium">Aucun document pour le moment</p>
-              <p class="text-slate-400 text-sm mt-1">GÃ©nÃ©rez votre premier PPSPS ci-dessus</p>
+              <p class="text-slate-400 text-sm mt-1">Générez votre premier PPSPS ci-dessus</p>
             </td>
           </tr>
           {% endfor %}
@@ -278,7 +284,7 @@
 
 {% block scripts %}
 <script>
-// Gestion du bouton de gÃ©nÃ©ration avec loading
+// Gestion du bouton de génération avec loading
 document.getElementById('gen-form')?.addEventListener('submit', function(e) {
   const button = document.getElementById('gen-button');
   if (!button || button.disabled) return;
@@ -286,7 +292,7 @@ document.getElementById('gen-form')?.addEventListener('submit', function(e) {
   const btnText = button.querySelector('.btn-text');
   const btnLoading = button.querySelector('.btn-loading');
   
-  // DÃ©sactiver le bouton
+  // Désactiver le bouton
   button.disabled = true;
   button.classList.remove('hover:from-blue-700', 'hover:to-blue-800', 'hover:shadow-blue-600/50');
   button.classList.add('opacity-90', 'cursor-wait');
@@ -295,7 +301,7 @@ document.getElementById('gen-form')?.addEventListener('submit', function(e) {
   btnText.classList.add('invisible');
   btnLoading.classList.remove('hidden');
   
-  // Timeout de sÃ©curitÃ© (rÃ©activer aprÃ¨s 5 minutes si pas de rÃ©ponse)
+  // Timeout de sécurité (réactiver après 5 minutes si pas de réponse)
   setTimeout(() => {
     button.disabled = false;
     button.classList.remove('opacity-90', 'cursor-wait');
