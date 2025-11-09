@@ -22,25 +22,6 @@ logger = logging.getLogger("sps")
 if not logger.handlers:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
-# ===== PLACEHOLDERS FORMULAIRE =====
-FORM_PLACEHOLDERS = {
-    "{{NOM_PROJET}}": "",
-    "{{ADRESSE_CHANTIER}}": "",
-    "{{REFERENCE_AFFAIRE}}": "",
-    "{{TELEPHONE_CHANTIER}}": "",
-    "{{DUREE_SEMAINES}}": "",
-    "{{EFFECTIF_MAXIMUM}}": "",
-    "{{LOTS_TRAVAUX}}": "",
-    "{{NOM_ENTREPRISE}}": "",
-    "{{ADRESSE_ENTREPRISE}}": "",
-    "{{TELEPHONE_ENTREPRISE}}": "",
-    "{{EMAIL_ENTREPRISE}}": "",
-    "{{RESPONSABLE_TRAVAUX}}": "",
-    "{{MAITRE_OUVRAGE}}": "",
-    "{{MAITRE_OEUVRE}}": ""
-}
-
-
 
 # ===== FastAPI / Starlette =====
 from fastapi import FastAPI, Body, Request, Form, Depends, HTTPException, UploadFile, File
@@ -398,34 +379,52 @@ import re
 import json
 
 
+
 def replace_placeholders_in_doc(doc, placeholder_values):
     """Remplace tous les placeholders dans un document DOCX de manière robuste."""
-    from docx import Document
     
     def replace_in_paragraph(paragraph, placeholder_values):
         """Remplace les placeholders dans un paragraphe, même s'ils sont fragmentés."""
-        for key, value in placeholder_values.items():
-            if key in paragraph.text:
-                # Reconstruire le texte en fusionnant les runs
-                full_text = paragraph.text
-                new_text = full_text.replace(key, str(value) if value else "")
+        # Obtenir le texte complet du paragraphe
+        full_text = paragraph.text
+        
+        # Vérifier si des placeholders existent
+        has_placeholder = any(key in full_text for key in placeholder_values.keys())
+        
+        if has_placeholder:
+            # Remplacer tous les placeholders
+            new_text = full_text
+            for key, value in placeholder_values.items():
+                new_text = new_text.replace(key, str(value) if value else "")
+            
+            # Si le texte a changé, reconstruire le paragraphe
+            if new_text != full_text:
+                # Sauvegarder le formatage du premier run
+                first_run = paragraph.runs[0] if paragraph.runs else None
                 
-                # Si le texte a changé, remplacer tout le paragraphe
-                if new_text != full_text:
-                    # Garder le style du premier run
-                    first_run_style = paragraph.runs[0].style if paragraph.runs else None
-                    first_run_font = paragraph.runs[0].font if paragraph.runs else None
-                    
-                    # Supprimer tous les runs
-                    for _ in range(len(paragraph.runs)):
-                        paragraph._element.remove(paragraph.runs[0]._element)
-                    
-                    # Ajouter un nouveau run avec le texte remplacé
-                    new_run = paragraph.add_run(new_text)
-                    if first_run_style:
-                        new_run.style = first_run_style
+                # Supprimer tous les runs existants
+                for _ in range(len(paragraph.runs)):
+                    paragraph._element.remove(paragraph.runs[0]._element)
+                
+                # Créer un nouveau run avec le texte remplacé
+                new_run = paragraph.add_run(new_text)
+                
+                # Restaurer le formatage si possible
+                if first_run:
+                    try:
+                        new_run.bold = first_run.bold
+                        new_run.italic = first_run.italic
+                        new_run.underline = first_run.underline
+                        if first_run.font.size:
+                            new_run.font.size = first_run.font.size
+                        if first_run.font.name:
+                            new_run.font.name = first_run.font.name
+                        if first_run.font.color.rgb:
+                            new_run.font.color.rgb = first_run.font.color.rgb
+                    except:
+                        pass  # Ignorer les erreurs de formatage
     
-    # Remplacer dans les paragraphes
+    # Remplacer dans les paragraphes principaux
     for paragraph in doc.paragraphs:
         replace_in_paragraph(paragraph, placeholder_values)
     
@@ -436,15 +435,15 @@ def replace_placeholders_in_doc(doc, placeholder_values):
                 for paragraph in cell.paragraphs:
                     replace_in_paragraph(paragraph, placeholder_values)
     
-    # Remplacer dans les en-têtes et pieds de page
+    # Remplacer dans les en-têtes
     for section in doc.sections:
-        for header in [section.header]:
-            for paragraph in header.paragraphs:
-                replace_in_paragraph(paragraph, placeholder_values)
+        for paragraph in section.header.paragraphs:
+            replace_in_paragraph(paragraph, placeholder_values)
         
-        for footer in [section.footer]:
-            for paragraph in footer.paragraphs:
-                replace_in_paragraph(paragraph, placeholder_values)
+        # Remplacer dans les pieds de page
+        for paragraph in section.footer.paragraphs:
+            replace_in_paragraph(paragraph, placeholder_values)
+
 
 class TemplateFiller:
     """Remplit intelligemment le template PPSPS avec les données du projet."""
@@ -459,6 +458,26 @@ class TemplateFiller:
         self.doc = Document(template_path)
         self.form_data = form_data or {}
         
+    
+    def _prepare_placeholder_values(self) -> dict:
+        """Prépare les valeurs des placeholders à partir des données du formulaire."""
+        return {
+            "{{NOM_PROJET}}": self.form_data.get("name", ""),
+            "{{ADRESSE_CHANTIER}}": self.form_data.get("address", ""),
+            "{{REFERENCE_AFFAIRE}}": self.form_data.get("project_reference", ""),
+            "{{TELEPHONE_CHANTIER}}": self.form_data.get("site_phone", ""),
+            "{{DUREE_SEMAINES}}": str(self.form_data.get("duration_weeks", "")) if self.form_data.get("duration_weeks") else "",
+            "{{EFFECTIF_MAXIMUM}}": str(self.form_data.get("workforce", "")) if self.form_data.get("workforce") else "",
+            "{{LOTS_TRAVAUX}}": self.form_data.get("works_csv", ""),
+            "{{NOM_ENTREPRISE}}": self.form_data.get("company_name", ""),
+            "{{ADRESSE_ENTREPRISE}}": self.form_data.get("company_address", ""),
+            "{{TELEPHONE_ENTREPRISE}}": self.form_data.get("company_phone", ""),
+            "{{EMAIL_ENTREPRISE}}": self.form_data.get("company_email", ""),
+            "{{RESPONSABLE_TRAVAUX}}": self.form_data.get("site_manager_name", ""),
+            "{{MAITRE_OUVRAGE}}": self.form_data.get("owner_name", ""),
+            "{{MAITRE_OEUVRE}}": self.form_data.get("architect_name", ""),
+        }
+
     def fill_with_ai(self, project_data: Dict[str, Any], evidence_pack: str, 
                      img_catalog: List[Dict], openai_client, model: str) -> Document:
         """
@@ -670,26 +689,6 @@ Réponds en JSON avec cette structure EXACTE :
         # 7. Ajouter les annexes à la fin
         self._add_annexes(fill_data.get("annexes", []), img_catalog)
     
-    
-    def _prepare_placeholder_values(self) -> dict:
-        """Prépare les valeurs des placeholders à partir des données du formulaire."""
-        return {
-            "{{NOM_PROJET}}": self.form_data.get("name", ""),
-            "{{ADRESSE_CHANTIER}}": self.form_data.get("address", ""),
-            "{{REFERENCE_AFFAIRE}}": self.form_data.get("project_reference", ""),
-            "{{TELEPHONE_CHANTIER}}": self.form_data.get("site_phone", ""),
-            "{{DUREE_SEMAINES}}": str(self.form_data.get("duration_weeks", "")) if self.form_data.get("duration_weeks") else "",
-            "{{EFFECTIF_MAXIMUM}}": str(self.form_data.get("workforce", "")) if self.form_data.get("workforce") else "",
-            "{{LOTS_TRAVAUX}}": self.form_data.get("works_csv", ""),
-            "{{NOM_ENTREPRISE}}": self.form_data.get("company_name", ""),
-            "{{ADRESSE_ENTREPRISE}}": self.form_data.get("company_address", ""),
-            "{{TELEPHONE_ENTREPRISE}}": self.form_data.get("company_phone", ""),
-            "{{EMAIL_ENTREPRISE}}": self.form_data.get("company_email", ""),
-            "{{RESPONSABLE_TRAVAUX}}": self.form_data.get("site_manager_name", ""),
-            "{{MAITRE_OUVRAGE}}": self.form_data.get("owner_name", ""),
-            "{{MAITRE_OEUVRE}}": self.form_data.get("architect_name", ""),
-        }
-
     def _fill_info_table(self, table, data: Dict):
         """Remplit le tableau d'informations générales (TABLE 0)."""
         if len(table.rows) > 0 and len(table.rows[0].cells) > 0:
@@ -2706,25 +2705,7 @@ def generate_ppsps_freeform(project_id: int, session: Session = Depends(get_sess
     
     # Utiliser le TemplateFiller pour remplir le template
     try:
-        # Préparer les données du formulaire pour les placeholders
-        form_data = {
-            "name": proj.name or "",
-            "address": proj.address or "",
-            "project_reference": getattr(proj, 'project_reference', "") or "",
-            "site_phone": getattr(proj, 'site_phone', "") or "",
-            "duration_weeks": proj.duration_weeks or 0,
-            "workforce": proj.workforce or 0,
-            "works_csv": proj.works_csv or "",
-            "company_name": getattr(proj, 'company_name', "") or "",
-            "company_address": getattr(proj, 'company_address', "") or "",
-            "company_phone": getattr(proj, 'company_phone', "") or "",
-            "company_email": getattr(proj, 'company_email', "") or "",
-            "site_manager_name": getattr(proj, 'site_manager_name', "") or "",
-            "owner_name": getattr(proj, 'owner_name', "") or "",
-            "architect_name": getattr(proj, 'architect_name', "") or "",
-        }
-        
-        filler = TemplateFiller(TEMPLATE_PATH, form_data=form_data)
+        filler = TemplateFiller(TEMPLATE_PATH)
         filled_doc = filler.fill_with_ai(
             project_data=meta_hint,
             evidence_pack=evidence,
@@ -3254,22 +3235,11 @@ async def ui_generate_doc(
     # 3) dispatcher par type
     k = kind.lower()
     if k in ("ppsps", "ppsps_freeform", "ppsps_docx"):
-        try:
-            res = generate_ppsps_freeform(proj.id, session, user)
-            doc_id = res.get("document_id")
-            if not doc_id:
-                raise HTTPException(status_code=500, detail="Génération PPSPS échouée")
-            return export_docx_by_id(doc_id, session=session, user=user)
-        except HTTPException as e:
-            # Si c'est une erreur 402 (jetons insuffisants), renvoyer du JSON
-            if e.status_code == 402:
-                from fastapi.responses import JSONResponse
-                return JSONResponse(
-                    status_code=402,
-                    content=e.detail
-                )
-            # Sinon, laisser l'exception se propager
-            raise
+        res = generate_ppsps_freeform(proj.id, session, user)
+        doc_id = res.get("document_id")
+        if not doc_id:
+            raise HTTPException(status_code=500, detail="Génération PPSPS échouée")
+        return export_docx_by_id(doc_id, session=session, user=user)
 
     raise HTTPException(status_code=400, detail="Type de doc inconnu (attendu: ppsps)")
 
