@@ -2705,7 +2705,7 @@ def generate_ppsps_freeform(project_id: int, session: Session = Depends(get_sess
     
     # Utiliser le TemplateFiller pour remplir le template
     try:
-        filler = TemplateFiller(TEMPLATE_PATH)
+        filler = TemplateFiller(TEMPLATE_PATH, form_data=meta_hint)
         filled_doc = filler.fill_with_ai(
             project_data=meta_hint,
             evidence_pack=evidence,
