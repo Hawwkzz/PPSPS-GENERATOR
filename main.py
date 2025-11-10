@@ -381,68 +381,57 @@ import json
 
 
 def replace_placeholders_in_doc(doc, placeholder_values):
-    """Remplace tous les placeholders dans un document DOCX de manière robuste."""
-    
+    """Remplace tous les placeholders dans un document DOCX de manière robuste
+    (y compris quand le texte est éclaté en plusieurs runs)."""
+
     def replace_in_paragraph(paragraph, placeholder_values):
-        """Remplace les placeholders dans un paragraphe, même s'ils sont fragmentés."""
-        # Obtenir le texte complet du paragraphe
-        full_text = paragraph.text
-        
-        # Vérifier si des placeholders existent
-        has_placeholder = any(key in full_text for key in placeholder_values.keys())
-        
-        if has_placeholder:
-            # Remplacer tous les placeholders
-            new_text = full_text
-            for key, value in placeholder_values.items():
-                new_text = new_text.replace(key, str(value) if value else "")
-            
-            # Si le texte a changé, reconstruire le paragraphe
-            if new_text != full_text:
-                # Sauvegarder le formatage du premier run
-                first_run = paragraph.runs[0] if paragraph.runs else None
-                
-                # Supprimer tous les runs existants
-                for _ in range(len(paragraph.runs)):
-                    paragraph._element.remove(paragraph.runs[0]._element)
-                
-                # Créer un nouveau run avec le texte remplacé
-                new_run = paragraph.add_run(new_text)
-                
-                # Restaurer le formatage si possible
-                if first_run:
-                    try:
-                        new_run.bold = first_run.bold
-                        new_run.italic = first_run.italic
-                        new_run.underline = first_run.underline
-                        if first_run.font.size:
-                            new_run.font.size = first_run.font.size
-                        if first_run.font.name:
-                            new_run.font.name = first_run.font.name
-                        if first_run.font.color.rgb:
-                            new_run.font.color.rgb = first_run.font.color.rgb
-                    except:
-                        pass  # Ignorer les erreurs de formatage
-    
-    # Remplacer dans les paragraphes principaux
+        # Rien à faire s'il n'y a pas de runs
+        if not paragraph.runs:
+            return
+
+        # Reconstruire le texte complet à partir des runs
+        full_text = "".join(run.text for run in paragraph.runs)
+
+        # Vérifier si au moins un placeholder est présent
+        if not any(key in full_text for key in placeholder_values.keys()):
+            return
+
+        # Appliquer tous les remplacements
+        new_text = full_text
+        for key, value in placeholder_values.items():
+            if key in new_text:
+                new_text = new_text.replace(key, str(value) if value is not None else "")
+
+        # Si rien n'a changé, on ne touche pas
+        if new_text == full_text:
+            return
+
+        # On garde le formatage du premier run
+        first_run = paragraph.runs[0]
+        first_run.text = new_text
+
+        # On efface les autres runs
+        for run in paragraph.runs[1:]:
+            run.text = ""
+
+    # Paragraphes "simples"
     for paragraph in doc.paragraphs:
         replace_in_paragraph(paragraph, placeholder_values)
-    
-    # Remplacer dans les tableaux
+
+    # Paragraphes dans les tableaux
     for table in doc.tables:
         for row in table.rows:
             for cell in row.cells:
                 for paragraph in cell.paragraphs:
                     replace_in_paragraph(paragraph, placeholder_values)
-    
-    # Remplacer dans les en-têtes
+
+    # En-têtes / pieds de page
     for section in doc.sections:
         for paragraph in section.header.paragraphs:
             replace_in_paragraph(paragraph, placeholder_values)
-        
-        # Remplacer dans les pieds de page
         for paragraph in section.footer.paragraphs:
             replace_in_paragraph(paragraph, placeholder_values)
+
 
 
 class TemplateFiller:
