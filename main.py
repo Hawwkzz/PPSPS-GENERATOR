@@ -381,56 +381,39 @@ import json
 
 
 def replace_placeholders_in_doc(doc, placeholder_values):
-    """Remplace tous les placeholders dans un document DOCX de manière robuste
-    (y compris quand le texte est éclaté en plusieurs runs)."""
+    """Remplace tous les {{PLACEHOLDERS}} dans le DOCX (texte, tableaux, en-têtes/pieds).
+    Version simple : on écrase le texte des paragraphes / cellules.
+    """
 
-    def replace_in_paragraph(paragraph, placeholder_values):
-        # Rien à faire s'il n'y a pas de runs
-        if not paragraph.runs:
-            return
-
-        # Reconstruire le texte complet à partir des runs
-        full_text = "".join(run.text for run in paragraph.runs)
-
-        # Vérifier si au moins un placeholder est présent
-        if not any(key in full_text for key in placeholder_values.keys()):
-            return
-
-        # Appliquer tous les remplacements
-        new_text = full_text
+    def replace_in_text(text: str) -> str:
+        if not text:
+            return text
+        new = text
         for key, value in placeholder_values.items():
-            if key in new_text:
-                new_text = new_text.replace(key, str(value) if value is not None else "")
+            new = new.replace(key, str(value) if value else "")
+        return new
 
-        # Si rien n'a changé, on ne touche pas
-        if new_text == full_text:
-            return
+    # 1) Paragraphes "simples" du document
+    for para in doc.paragraphs:
+        para.text = replace_in_text(para.text)
 
-        # On garde le formatage du premier run
-        first_run = paragraph.runs[0]
-        first_run.text = new_text
-
-        # On efface les autres runs
-        for run in paragraph.runs[1:]:
-            run.text = ""
-
-    # Paragraphes "simples"
-    for paragraph in doc.paragraphs:
-        replace_in_paragraph(paragraph, placeholder_values)
-
-    # Paragraphes dans les tableaux
+    # 2) Tableaux (toutes les cellules)
     for table in doc.tables:
         for row in table.rows:
             for cell in row.cells:
-                for paragraph in cell.paragraphs:
-                    replace_in_paragraph(paragraph, placeholder_values)
+                cell.text = replace_in_text(cell.text)
 
-    # En-têtes / pieds de page
+    # 3) En-têtes / pieds de page de chaque section
     for section in doc.sections:
-        for paragraph in section.header.paragraphs:
-            replace_in_paragraph(paragraph, placeholder_values)
-        for paragraph in section.footer.paragraphs:
-            replace_in_paragraph(paragraph, placeholder_values)
+        # Header
+        header = section.header
+        for para in header.paragraphs:
+            para.text = replace_in_text(para.text)
+        # Footer
+        footer = section.footer
+        for para in footer.paragraphs:
+            para.text = replace_in_text(para.text)
+
 
 
 
