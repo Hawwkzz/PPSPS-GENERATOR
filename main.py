@@ -467,6 +467,62 @@ class TemplateFiller:
             "{{MAITRE_OEUVRE}}": self.form_data.get("architect_name", ""),
         }
 
+    def _replace_placeholders(self, project_data: Dict[str, Any]):
+        """Remplace les {{PLACEHOLDERS}} du template par les données du projet."""
+        # Mapping placeholder -> valeur (vient du formulaire / meta_hint)
+        placeholder_values = {
+            "{{NOM_ENTREPRISE}}": project_data.get("company_name", "") or "",
+            "{{ADRESSE_CHANTIER}}": project_data.get("address", "") or "",
+            "{{TELEPHONE_CHANTIER}}": project_data.get("site_phone", "") or "",
+            "{{REFERENCE_AFFAIRE}}": project_data.get("project_reference", "") or "",
+            "{{RESPONSABLE_TRAVAUX}}": project_data.get("site_manager_name", "") or "",
+            "{{MAITRE_OUVRAGE}}": project_data.get("owner_name", "") or "",
+            "{{MAITRE_OEUVRE}}": project_data.get("architect_name", "") or "",
+            "{{EFFECTIF_MAXIMUM}}": str(project_data.get("workforce", "")) or "",
+        }
+
+        def replace_in_paragraph(paragraph):
+            if not paragraph.runs:
+                return
+
+            full_text = "".join(run.text for run in paragraph.runs)
+
+            # Si aucun placeholder dans ce paragraphe, on zappe
+            if not any(ph in full_text for ph in placeholder_values.keys()):
+                return
+
+            new_text = full_text
+            for ph, value in placeholder_values.items():
+                if ph in new_text:
+                    new_text = new_text.replace(ph, value)
+
+            if new_text == full_text:
+                return
+
+            # On met tout dans le premier run (on conserve le style)
+            paragraph.runs[0].text = new_text
+            for run in paragraph.runs[1:]:
+                run.text = ""
+
+        # Corps du document
+        for p in self.doc.paragraphs:
+            replace_in_paragraph(p)
+
+        # Tableaux
+        for table in self.doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    for p in cell.paragraphs:
+                        replace_in_paragraph(p)
+
+        # En-têtes / pieds de page
+        for section in self.doc.sections:
+            for p in section.header.paragraphs:
+                replace_in_paragraph(p)
+            for p in section.footer.paragraphs:
+                replace_in_paragraph(p)
+
+
     def fill_with_ai(self, project_data: Dict[str, Any], evidence_pack: str, 
                      img_catalog: List[Dict], openai_client, model: str) -> Document:
         """
@@ -482,9 +538,12 @@ class TemplateFiller:
         Returns:
             Document DOCX rempli
         """
-        # 0. Remplacer les placeholders du formulaire AVANT l'IA
-        placeholder_values = self._prepare_placeholder_values()
-        replace_placeholders_in_doc(self.doc, placeholder_values)
+
+        # 0. Remplacer directement les placeholders simples à partir du formulaire
+        self._replace_placeholders(project_data)
+
+        # 1. Créer le prompt pour l'IA
+
         
         # 1. Créer le prompt pour l'IA
         prompt = self._build_fill_prompt(project_data, evidence_pack, img_catalog)
