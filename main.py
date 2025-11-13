@@ -506,7 +506,7 @@ class TemplateFiller:
             response = openai_client.chat.completions.create(
                 model=model,
                 temperature=0.2,
-                max_tokens=4000,
+                max_tokens=20000,
                 messages=messages
             )
             
