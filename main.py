@@ -534,24 +534,15 @@ class TemplateFiller:
         
         return f"""Tu dois extraire et structurer les informations pour remplir un PPSPS.
 
-🎯 RÈGLE IMPORTANTE : SÉPARATION DES SOURCES
-Les informations du FORMULAIRE (nom entreprise, adresse chantier, téléphone, maître d'ouvrage, etc.) 
-sont DÉJÀ REMPLIES automatiquement dans le document via des placeholders.
+🎯 RÈGLE ABSOLUE : PRIORITÉ DES SOURCES
+1. **TOUJOURS utiliser EN PRIORITÉ les informations des PIÈCES UPLOADÉES** (extraits ci-dessous)
+2. Le **formulaire** sert UNIQUEMENT de **FALLBACK** si l'info est absente des pièces
+3. Si une info est trouvée dans les pièces, l'utiliser MÊME si le formulaire contient autre chose
 
-TON RÔLE : Extraire UNIQUEMENT les informations suivantes des PIÈCES UPLOADÉES :
-✅ Description de l'opération, lot, travaux confiés
-✅ Mesures d'hygiène (vestiaires, sanitaires, restauration)
-✅ Risques liés aux travaux et à l'environnement
-✅ Organismes de prévention et secours
-✅ Annexes (plans, images)
-
-❌ NE PAS extraire : nom entreprise, adresse/téléphone chantier, maître d'ouvrage, maître d'œuvre, effectifs
-(Ces infos viennent du formulaire et sont déjà dans le document)
-
-📄 PIÈCES UPLOADÉES À ANALYSER :
+📄 PIÈCES UPLOADÉES (PRIORITÉ ABSOLUE) :
 {evidence_pack}
 
-📝 FORMULAIRE (pour contexte, mais NE PAS extraire ces champs) :
+📝 FORMULAIRE (FALLBACK UNIQUEMENT) :
 {json.dumps(project_data, ensure_ascii=False, indent=2)}
 
 🖼️ IMAGES DISPONIBLES :
@@ -561,9 +552,19 @@ Réponds en JSON avec cette structure EXACTE :
 
 {{
   "informations_generales": {{
-    "description_operation": "Description détaillée de l'opération/chantier depuis les pièces",
-    "lot": "Lot de l'entreprise si trouvé dans les pièces",
-    "travaux_confies": "Description des travaux confiés à l'entreprise depuis les pièces"
+    "nom_entreprise": "...",
+    "telephone": "...",
+    "adresse": "...",
+    "email": "...",
+    "fax": "...",
+    "nom_chef_entreprise": "...",
+    "description_operation": "Description détaillée de l'opération/chantier",
+    "lot": "Lot de l'entreprise",
+    "travaux_confies": "Description des travaux confiés à l'entreprise",
+    "date_debut": "JJ/MM/AAAA",
+    "date_fin": "JJ/MM/AAAA",
+    "effectif_moyen": "nombre",
+    "effectif_pointe": "nombre"
   }},
   
   "organismes_prevention": {{
@@ -657,38 +658,32 @@ Réponds en JSON avec cette structure EXACTE :
     def _fill_document(self, fill_data: Dict, img_catalog: List[Dict]):
         """Remplit le document avec les données extraites par l'IA."""
         
-        # 1. Remplir TABLE 0 (informations entreprise)
+        # 1. Remplir le premier tableau (informations générales)
         if len(self.doc.tables) > 0:
             self._fill_info_table(self.doc.tables[0], fill_data.get("informations_generales", {}))
         
-        # 2. Remplir TABLE 1 (chantier: adresse, tel, dates, effectifs, responsable)
+        # 2. Remplir le deuxième tableau (description opération)
         if len(self.doc.tables) > 1:
-            self._fill_chantier_table(self.doc.tables[1], fill_data.get("informations_generales", {}))
+            self._fill_operation_table(self.doc.tables[1], fill_data.get("informations_generales", {}))
         
-        # 3. TABLE 2 (sous-traitants) - pas encore géré, skip pour l'instant
+        # 3. Remplir le tableau hygiène
+        if len(self.doc.tables) > 2:
+            self._fill_hygiene_table(self.doc.tables[2], fill_data.get("mesures_hygiene", {}))
         
-        # 4. Remplir TABLE 3 (description opération: description, lot, travaux confiés)
+        # 4. Remplir le tableau risques travaux
         if len(self.doc.tables) > 3:
-            self._fill_operation_table(self.doc.tables[3], fill_data.get("informations_generales", {}))
-        
-        # 5. Remplir TABLE 4 (hygiène: vestiaires, sanitaires, restauration)
-        if len(self.doc.tables) > 4:
-            self._fill_hygiene_table(self.doc.tables[4], fill_data.get("mesures_hygiene", {}))
-        
-        # 6. Remplir TABLE 5 (risques travaux)
-        if len(self.doc.tables) > 5:
-            self._fill_risques_travaux_table(self.doc.tables[5], 
+            self._fill_risques_travaux_table(self.doc.tables[3], 
                                             fill_data.get("risques_travaux", []))
         
-        # 7. Remplir TABLE 6 (risques environnement)
-        if len(self.doc.tables) > 6:
-            self._fill_risques_env_table(self.doc.tables[6], 
+        # 5. Remplir le tableau risques environnement
+        if len(self.doc.tables) > 4:
+            self._fill_risques_env_table(self.doc.tables[4], 
                                         fill_data.get("risques_environnement", []))
         
-        # 8. Remplir les sections texte (organismes, secours)
+        # 6. Remplir les sections texte (organismes, secours)
         self._fill_text_sections(fill_data)
         
-        # 9. Ajouter les annexes à la fin
+        # 7. Ajouter les annexes à la fin
         self._add_annexes(fill_data.get("annexes", []), img_catalog)
     
     
@@ -719,46 +714,55 @@ Réponds en JSON avec cette structure EXACTE :
         return values
 
     def _fill_info_table(self, table, data: Dict):
-        """Remplit le tableau d'informations générales (TABLE 0).
-        Note: Cette table contient le placeholder {{NOM_ENTREPRISE}} qui est déjà remplacé
-        par le formulaire. On ne touche PAS à cette table."""
-        # Ne rien faire - les placeholders ont déjà été remplacés par le formulaire
-        pass
-    
-    def _fill_chantier_table(self, table, data: Dict):
-        """Remplit le tableau CHANTIER (TABLE 1).
-        Note: Les cellules contiennent des placeholders déjà remplacés par le formulaire.
-        On ne remplit QUE les cellules vides ou celles qui ne sont pas gérées par le formulaire."""
-        # Cette table contient des placeholders gérés par le formulaire:
-        # - {{ADRESSE_CHANTIER}} ligne 1
-        # - {{TELEPHONE_CHANTIER}} ligne 2
-        # - {{REFERENCE_AFFAIRE}} ligne 3
-        # - {{RESPONSABLE_TRAVAUX}} ligne 4
-        # - {{MAITRE_OUVRAGE}} ligne 7
-        # - {{MAITRE_OEUVRE}} ligne 12
-        # On ne touche PAS à ces cellules car elles sont déjà remplies par le formulaire
-        pass
+        """Remplit le tableau d'informations générales (TABLE 0)."""
+        if len(table.rows) > 0 and len(table.rows[0].cells) > 0:
+            cell = table.rows[0].cells[0]
+            
+            # Construire le texte avec les données
+            nom = data.get("nom_entreprise", "")
+            tel = data.get("telephone", "")
+            adresse = data.get("adresse", "")
+            email = data.get("email", "")
+            fax = data.get("fax", "")
+            chef = data.get("nom_chef_entreprise", "")
+            
+            new_text = (
+                f"Nom de l'entreprise : {nom if nom else '…' * 40}\n"
+                f"Tél. : {tel if tel else '…' * 20}\n"
+                f"Adresse : {adresse if adresse else '…' * 50}\n"
+                f"E-mail : {email if email else '…' * 30}\n"
+                f"Fax : {fax if fax else '…' * 30}\n"
+                f"Nom du Chef d'entreprise : {chef if chef else '…' * 40}"
+            )
+            
+            cell.text = new_text
     
     def _fill_operation_table(self, table, data: Dict):
-        """Remplit le tableau description de l'opération (TABLE 3)."""
-        if len(table.rows) >= 2:
+        """Remplit le tableau description de l'opération (TABLE 1)."""
+        if len(table.rows) >= 4:
             # Ligne 0 : Description et Lot
             if len(table.rows[0].cells) >= 3:
                 desc = data.get("description_operation", "")
                 lot = data.get("lot", "")
-                if desc:
-                    table.rows[0].cells[1].text = desc
-                if lot:
-                    table.rows[0].cells[2].text = f"Lot : {lot}"
+                table.rows[0].cells[1].text = desc if desc else ""
+                table.rows[0].cells[2].text = f"Lot : {lot if lot else ''}"
             
             # Ligne 1 : Travaux confiés
             if len(table.rows[1].cells) >= 2:
                 travaux = data.get("travaux_confies", "")
-                if travaux:
-                    table.rows[1].cells[1].text = travaux
-        
-        # Ligne 3 : Effectifs (contient placeholder {{EFFECTIF_MAXIMUM}})
-        # Ne PAS toucher cette ligne, elle est gérée par le formulaire
+                table.rows[1].cells[1].text = travaux if travaux else ""
+            
+            # Ligne 2 : Planning
+            if len(table.rows[2].cells) >= 2:
+                debut = data.get("date_debut", "")
+                fin = data.get("date_fin", "")
+                table.rows[2].cells[1].text = f"Date de début : {debut}\tDate de fin : {fin}"
+            
+            # Ligne 3 : Effectifs
+            if len(table.rows[3].cells) >= 2:
+                moyen = data.get("effectif_moyen", "")
+                pointe = data.get("effectif_pointe", "")
+                table.rows[3].cells[1].text = f"Effectif moyen : {moyen}\tEffectif de pointe : {pointe}"
     
     def _fill_hygiene_table(self, table, data: Dict):
         """Remplit le tableau mesures d'hygiène (TABLE 2)."""
@@ -1628,7 +1632,7 @@ def create_project(p: Project, session: Session = Depends(get_session), user: Us
 
 @app.get("/projects")
 def list_projects(session: Session = Depends(get_session), user: UserDB = Depends(require_login)):
-    return session.exec(select(ProjectDB).where(ProjectDB.owner_id == user.id)).all()
+    return session.exec(select(ProjectDB).where(ProjectDB.owner_id == user.id).order_by(ProjectDB.created_at.desc())).all()
 
 @app.post("/projects/{project_id}/documents")
 def add_document(project_id: int, doc: DocumentIn, session: Session = Depends(get_session), user: UserDB = Depends(require_login)):
@@ -3028,7 +3032,7 @@ def ui_register_post(
 
 @app.get("/ui/projects", response_class=HTMLResponse)
 def ui_projects(request: Request, session: Session = Depends(get_session), user: UserDB = Depends(require_login)):
-    projects = session.exec(select(ProjectDB).where(ProjectDB.owner_id == user.id)).all()
+    projects = session.exec(select(ProjectDB).where(ProjectDB.owner_id == user.id).order_by(ProjectDB.created_at.desc())).all()
     csrf = _ensure_csrf_token(request)
     return templates.TemplateResponse("projects_list.html", {"request": request, "projects": projects, "csrf_token": csrf})
 
@@ -3096,8 +3100,13 @@ def ui_project_detail(project_id: int, request: Request, session: Session = Depe
     csrf = _ensure_csrf_token(request)
     # Récupérer le solde de jetons
     balance = TokenService.get_balance(session, user.id)
+    # Avertissement pour l'upload de fichiers
+    upload_warning = {
+        "title": "⚠️ Important : Téléversez tous les fichiers nécessaires",
+        "message": "Avant de générer le PPSPS, assurez-vous d'avoir uploadé TOUS les documents requis (PGC, plans, annexes, etc.). La génération coûte 1 jeton et ne peut pas être annulée. Vérifiez que tous vos fichiers sont bien présents avant de lancer la génération."
+    }
     return templates.TemplateResponse("project_detail.html", {
-        "request": request, "p": proj, "docs": docs, "files": files, "ia_summary": ia_summary, "csrf_token": csrf, "balance": balance
+        "request": request, "p": proj, "docs": docs, "files": files, "ia_summary": ia_summary, "csrf_token": csrf, "balance": balance, "upload_warning": upload_warning
     })
 
 @app.post("/ui/projects/{project_id}/ingest")
