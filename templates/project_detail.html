@@ -1,5 +1,5 @@
 {% extends "layout_seo.html" %}
-{% block title %}Projet â€“ {{ p.name }}{% endblock %}
+{% block title %}Projet – {{ p.name }}{% endblock %}
 {% block content %}
 <div class="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
 
@@ -27,7 +27,7 @@
           </svg>
         </div>
         <div class="text-sm text-amber-900">
-          <p class="font-bold text-base mb-2">⚠️ Important : Document à réviser obligatoirement</p>
+          <p class="font-bold text-base mb-2">⚠️ Important : Document à réviser obligatoirement</p>
           <p class="mb-2">Le PPSPS généré est une <strong>ébauche automatisée</strong> qui nécessite impérativement une <strong>révision et validation humaine</strong> par un professionnel qualifié (coordonnateur SPS, responsable travaux, etc.) avant toute utilisation sur chantier.</p>
           <p class="text-xs">PPSPS Generator décline toute responsabilité en cas d'utilisation d'un document non préalablement contrôlé, modifié et validé par un expert compétent. Ce service est un outil d'aide à la rédaction, non un substitut au jugement professionnel.</p>
         </div>
@@ -53,10 +53,6 @@
       <form method="post" action="/ui/projects/{{ p.id }}/files/upload" enctype="multipart/form-data" class="p-5 space-y-4">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         
-        <p class="text-sm text-slate-700 mb-3">
-          <strong>📄 Téléversez vos documents</strong> (PGC, DUER, Plans) pour aider à la construction du PPSPS.
-        </p>
-
         <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 hover:border-blue-400 transition-colors">
           <input type="file" name="file" accept=".pdf,.docx,.txt,.md,.png,.jpg,.jpeg" required
                  class="block w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"/>
@@ -84,19 +80,25 @@
         </div>
       </div>
 
+
+      <!-- Avertissement upload -->
+      {% if upload_warning %}
+      <div class="mx-5 mt-5 p-4 bg-amber-50 border-l-4 border-amber-500 rounded-r-lg">
+        <div class="flex items-start gap-3">
+          <svg class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+          </svg>
+          <div class="text-sm text-amber-900">
+            <p class="font-semibold mb-1">{{ upload_warning.title }}</p>
+            <p>{{ upload_warning.message }}</p>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
       <form id="gen-form" method="post" action="/ui/projects/{{ p.id }}/gen/ppsps" class="p-5 space-y-4">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         {% set has_files = files|length > 0 %}
-        
-        <p class="text-sm text-slate-700 mb-3">
-          <strong>⚡ Générez votre PPSPS</strong> en un clic une fois vos documents PGC, DUER et Plans uploadés.
-        </p>
-        
-        <div class="border-2 border-blue-200 bg-blue-50 rounded-lg p-6">
-          <p class="text-sm text-slate-700 text-center">
-            Cliquez sur le bouton ci-dessous pour lancer la génération automatique de votre PPSPS.
-          </p>
-        </div>
         
         <button 
           type="submit" 
@@ -132,7 +134,7 @@
       </div>
       <div class="font-semibold text-slate-900">
         {% set works = (p.works_csv or '').split(',') | select('string') | map('trim') | list %}
-        {{ works|reject('equalto','')|list|join(', ') if works else 'â€”' }}
+        {{ works|reject('equalto','')|list|join(', ') if works else '—' }}
       </div>
     </div>
 
@@ -284,17 +286,13 @@
 
 {% block scripts %}
 <script>
-// Gestion du bouton de génération avec loading et gestion des erreurs
-document.getElementById('gen-form')?.addEventListener('submit', async function(e) {
-  e.preventDefault(); // Empêcher le submit normal
-  
-  const form = e.target;
+// Gestion du bouton de génération avec loading
+document.getElementById('gen-form')?.addEventListener('submit', function(e) {
   const button = document.getElementById('gen-button');
   if (!button || button.disabled) return;
   
   const btnText = button.querySelector('.btn-text');
   const btnLoading = button.querySelector('.btn-loading');
-  const loadingText = btnLoading.querySelector('span');
   
   // Désactiver le bouton
   button.disabled = true;
@@ -304,49 +302,15 @@ document.getElementById('gen-form')?.addEventListener('submit', async function(e
   // Afficher le loading
   btnText.classList.add('invisible');
   btnLoading.classList.remove('hidden');
-  loadingText.textContent = 'Génération en cours...';
   
-  try {
-    // Envoyer la requête
-    const formData = new FormData(form);
-    const response = await fetch(form.action, {
-      method: 'POST',
-      body: formData
-    });
-    
-    // Vérifier si c'est une erreur de jetons insuffisants
-    if (response.status === 402) {
-      const data = await response.json();
-      alert('⚠️ Jetons insuffisants\n\n' + (data.detail?.message || data.detail || 'Vous n\'avez pas assez de jetons.'));
-      window.location.href = '/tokens/shop';
-      return;
-    }
-    
-    // Vérifier si c'est une autre erreur
-    if (!response.ok) {
-      const data = await response.json().catch(() => ({}));
-      throw new Error(data.detail || 'Erreur lors de la génération');
-    }
-    
-    // Succès ! Afficher "Génération terminée"
-    loadingText.textContent = 'Génération terminée ✓';
-    
-    // Attendre 1.5 secondes puis recharger la page
-    setTimeout(() => {
-      location.reload();
-    }, 1500);
-    
-  } catch (error) {
-    // Gérer les erreurs
-    alert('❌ Erreur : ' + error.message);
-    
-    // Réactiver le bouton
+  // Timeout de sécurité (réactiver après 5 minutes si pas de réponse)
+  setTimeout(() => {
     button.disabled = false;
     button.classList.remove('opacity-90', 'cursor-wait');
     button.classList.add('hover:from-blue-700', 'hover:to-blue-800', 'hover:shadow-blue-600/50');
     btnText.classList.remove('invisible');
     btnLoading.classList.add('hidden');
-  }
+  }, 300000);
 });
 
 // Suppression de fichier
