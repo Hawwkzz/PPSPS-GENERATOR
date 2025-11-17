@@ -534,15 +534,24 @@ class TemplateFiller:
         
         return f"""Tu dois extraire et structurer les informations pour remplir un PPSPS.
 
-🎯 RÈGLE ABSOLUE : PRIORITÉ DES SOURCES
-1. **TOUJOURS utiliser EN PRIORITÉ les informations des PIÈCES UPLOADÉES** (extraits ci-dessous)
-2. Le **formulaire** sert UNIQUEMENT de **FALLBACK** si l'info est absente des pièces
-3. Si une info est trouvée dans les pièces, l'utiliser MÊME si le formulaire contient autre chose
+🎯 RÈGLE IMPORTANTE : SÉPARATION DES SOURCES
+Les informations du FORMULAIRE (nom entreprise, adresse chantier, téléphone, maître d'ouvrage, etc.) 
+sont DÉJÀ REMPLIES automatiquement dans le document via des placeholders.
 
-📄 PIÈCES UPLOADÉES (PRIORITÉ ABSOLUE) :
+TON RÔLE : Extraire UNIQUEMENT les informations suivantes des PIÈCES UPLOADÉES :
+✅ Description de l'opération, lot, travaux confiés
+✅ Mesures d'hygiène (vestiaires, sanitaires, restauration)
+✅ Risques liés aux travaux et à l'environnement
+✅ Organismes de prévention et secours
+✅ Annexes (plans, images)
+
+❌ NE PAS extraire : nom entreprise, adresse/téléphone chantier, maître d'ouvrage, maître d'œuvre, effectifs
+(Ces infos viennent du formulaire et sont déjà dans le document)
+
+📄 PIÈCES UPLOADÉES À ANALYSER :
 {evidence_pack}
 
-📝 FORMULAIRE (FALLBACK UNIQUEMENT) :
+📝 FORMULAIRE (pour contexte, mais NE PAS extraire ces champs) :
 {json.dumps(project_data, ensure_ascii=False, indent=2)}
 
 🖼️ IMAGES DISPONIBLES :
@@ -552,19 +561,9 @@ Réponds en JSON avec cette structure EXACTE :
 
 {{
   "informations_generales": {{
-    "nom_entreprise": "...",
-    "telephone": "...",
-    "adresse": "...",
-    "email": "...",
-    "fax": "...",
-    "nom_chef_entreprise": "...",
-    "description_operation": "Description détaillée de l'opération/chantier",
-    "lot": "Lot de l'entreprise",
-    "travaux_confies": "Description des travaux confiés à l'entreprise",
-    "date_debut": "JJ/MM/AAAA",
-    "date_fin": "JJ/MM/AAAA",
-    "effectif_moyen": "nombre",
-    "effectif_pointe": "nombre"
+    "description_operation": "Description détaillée de l'opération/chantier depuis les pièces",
+    "lot": "Lot de l'entreprise si trouvé dans les pièces",
+    "travaux_confies": "Description des travaux confiés à l'entreprise depuis les pièces"
   }},
   
   "organismes_prevention": {{
@@ -720,55 +719,25 @@ Réponds en JSON avec cette structure EXACTE :
         return values
 
     def _fill_info_table(self, table, data: Dict):
-        """Remplit le tableau d'informations générales (TABLE 0)."""
-        if len(table.rows) > 0 and len(table.rows[0].cells) > 0:
-            cell = table.rows[0].cells[0]
-            
-            # Construire le texte avec les données
-            nom = data.get("nom_entreprise", "")
-            tel = data.get("telephone", "")
-            adresse = data.get("adresse", "")
-            email = data.get("email", "")
-            fax = data.get("fax", "")
-            chef = data.get("nom_chef_entreprise", "")
-            
-            new_text = (
-                f"Nom de l'entreprise : {nom if nom else '…' * 40}\n"
-                f"Tél. : {tel if tel else '…' * 20}\n"
-                f"Adresse : {adresse if adresse else '…' * 50}\n"
-                f"E-mail : {email if email else '…' * 30}\n"
-                f"Fax : {fax if fax else '…' * 30}\n"
-                f"Nom du Chef d'entreprise : {chef if chef else '…' * 40}"
-            )
-            
-            cell.text = new_text
+        """Remplit le tableau d'informations générales (TABLE 0).
+        Note: Cette table contient le placeholder {{NOM_ENTREPRISE}} qui est déjà remplacé
+        par le formulaire. On ne touche PAS à cette table."""
+        # Ne rien faire - les placeholders ont déjà été remplacés par le formulaire
+        pass
     
     def _fill_chantier_table(self, table, data: Dict):
-        """Remplit le tableau CHANTIER (TABLE 1)."""
-        if len(table.rows) < 5:
-            return
-        
-        # Ligne 1 : Adresse du chantier
-        if len(table.rows[1].cells) >= 2:
-            adresse = data.get("adresse_chantier", "")
-            table.rows[1].cells[1].text = adresse if adresse else ""
-        
-        # Ligne 2 : Dates
-        if len(table.rows[2].cells) >= 2:
-            debut = data.get("date_debut", "")
-            fin = data.get("date_fin", "")
-            table.rows[2].cells[1].text = f"Date de début : {debut}\tDate de fin : {fin}"
-        
-        # Ligne 3 : Effectifs
-        if len(table.rows[3].cells) >= 2:
-            moyen = data.get("effectif_moyen", "")
-            pointe = data.get("effectif_pointe", "")
-            table.rows[3].cells[1].text = f"Effectif moyen : {moyen}\tEffectif de pointe : {pointe}"
-        
-        # Ligne 4 : Responsable travaux
-        if len(table.rows[4].cells) >= 2:
-            responsable = data.get("responsable_travaux", "")
-            table.rows[4].cells[1].text = responsable if responsable else ""
+        """Remplit le tableau CHANTIER (TABLE 1).
+        Note: Les cellules contiennent des placeholders déjà remplacés par le formulaire.
+        On ne remplit QUE les cellules vides ou celles qui ne sont pas gérées par le formulaire."""
+        # Cette table contient des placeholders gérés par le formulaire:
+        # - {{ADRESSE_CHANTIER}} ligne 1
+        # - {{TELEPHONE_CHANTIER}} ligne 2
+        # - {{REFERENCE_AFFAIRE}} ligne 3
+        # - {{RESPONSABLE_TRAVAUX}} ligne 4
+        # - {{MAITRE_OUVRAGE}} ligne 7
+        # - {{MAITRE_OEUVRE}} ligne 12
+        # On ne touche PAS à ces cellules car elles sont déjà remplies par le formulaire
+        pass
     
     def _fill_operation_table(self, table, data: Dict):
         """Remplit le tableau description de l'opération (TABLE 3)."""
@@ -777,13 +746,19 @@ Réponds en JSON avec cette structure EXACTE :
             if len(table.rows[0].cells) >= 3:
                 desc = data.get("description_operation", "")
                 lot = data.get("lot", "")
-                table.rows[0].cells[1].text = desc if desc else ""
-                table.rows[0].cells[2].text = f"Lot : {lot if lot else ''}"
+                if desc:
+                    table.rows[0].cells[1].text = desc
+                if lot:
+                    table.rows[0].cells[2].text = f"Lot : {lot}"
             
             # Ligne 1 : Travaux confiés
             if len(table.rows[1].cells) >= 2:
                 travaux = data.get("travaux_confies", "")
-                table.rows[1].cells[1].text = travaux if travaux else ""
+                if travaux:
+                    table.rows[1].cells[1].text = travaux
+        
+        # Ligne 3 : Effectifs (contient placeholder {{EFFECTIF_MAXIMUM}})
+        # Ne PAS toucher cette ligne, elle est gérée par le formulaire
     
     def _fill_hygiene_table(self, table, data: Dict):
         """Remplit le tableau mesures d'hygiène (TABLE 2)."""
