@@ -658,32 +658,38 @@ Réponds en JSON avec cette structure EXACTE :
     def _fill_document(self, fill_data: Dict, img_catalog: List[Dict]):
         """Remplit le document avec les données extraites par l'IA."""
         
-        # 1. Remplir le premier tableau (informations générales)
+        # 1. Remplir TABLE 0 (informations entreprise)
         if len(self.doc.tables) > 0:
             self._fill_info_table(self.doc.tables[0], fill_data.get("informations_generales", {}))
         
-        # 2. Remplir le deuxième tableau (description opération)
+        # 2. Remplir TABLE 1 (chantier: adresse, tel, dates, effectifs, responsable)
         if len(self.doc.tables) > 1:
-            self._fill_operation_table(self.doc.tables[1], fill_data.get("informations_generales", {}))
+            self._fill_chantier_table(self.doc.tables[1], fill_data.get("informations_generales", {}))
         
-        # 3. Remplir le tableau hygiène
-        if len(self.doc.tables) > 2:
-            self._fill_hygiene_table(self.doc.tables[2], fill_data.get("mesures_hygiene", {}))
+        # 3. TABLE 2 (sous-traitants) - pas encore géré, skip pour l'instant
         
-        # 4. Remplir le tableau risques travaux
+        # 4. Remplir TABLE 3 (description opération: description, lot, travaux confiés)
         if len(self.doc.tables) > 3:
-            self._fill_risques_travaux_table(self.doc.tables[3], 
+            self._fill_operation_table(self.doc.tables[3], fill_data.get("informations_generales", {}))
+        
+        # 5. Remplir TABLE 4 (hygiène: vestiaires, sanitaires, restauration)
+        if len(self.doc.tables) > 4:
+            self._fill_hygiene_table(self.doc.tables[4], fill_data.get("mesures_hygiene", {}))
+        
+        # 6. Remplir TABLE 5 (risques travaux)
+        if len(self.doc.tables) > 5:
+            self._fill_risques_travaux_table(self.doc.tables[5], 
                                             fill_data.get("risques_travaux", []))
         
-        # 5. Remplir le tableau risques environnement
-        if len(self.doc.tables) > 4:
-            self._fill_risques_env_table(self.doc.tables[4], 
+        # 7. Remplir TABLE 6 (risques environnement)
+        if len(self.doc.tables) > 6:
+            self._fill_risques_env_table(self.doc.tables[6], 
                                         fill_data.get("risques_environnement", []))
         
-        # 6. Remplir les sections texte (organismes, secours)
+        # 8. Remplir les sections texte (organismes, secours)
         self._fill_text_sections(fill_data)
         
-        # 7. Ajouter les annexes à la fin
+        # 9. Ajouter les annexes à la fin
         self._add_annexes(fill_data.get("annexes", []), img_catalog)
     
     
@@ -737,9 +743,36 @@ Réponds en JSON avec cette structure EXACTE :
             
             cell.text = new_text
     
+    def _fill_chantier_table(self, table, data: Dict):
+        """Remplit le tableau CHANTIER (TABLE 1)."""
+        if len(table.rows) < 5:
+            return
+        
+        # Ligne 1 : Adresse du chantier
+        if len(table.rows[1].cells) >= 2:
+            adresse = data.get("adresse_chantier", "")
+            table.rows[1].cells[1].text = adresse if adresse else ""
+        
+        # Ligne 2 : Dates
+        if len(table.rows[2].cells) >= 2:
+            debut = data.get("date_debut", "")
+            fin = data.get("date_fin", "")
+            table.rows[2].cells[1].text = f"Date de début : {debut}\tDate de fin : {fin}"
+        
+        # Ligne 3 : Effectifs
+        if len(table.rows[3].cells) >= 2:
+            moyen = data.get("effectif_moyen", "")
+            pointe = data.get("effectif_pointe", "")
+            table.rows[3].cells[1].text = f"Effectif moyen : {moyen}\tEffectif de pointe : {pointe}"
+        
+        # Ligne 4 : Responsable travaux
+        if len(table.rows[4].cells) >= 2:
+            responsable = data.get("responsable_travaux", "")
+            table.rows[4].cells[1].text = responsable if responsable else ""
+    
     def _fill_operation_table(self, table, data: Dict):
-        """Remplit le tableau description de l'opération (TABLE 1)."""
-        if len(table.rows) >= 4:
+        """Remplit le tableau description de l'opération (TABLE 3)."""
+        if len(table.rows) >= 2:
             # Ligne 0 : Description et Lot
             if len(table.rows[0].cells) >= 3:
                 desc = data.get("description_operation", "")
@@ -751,18 +784,6 @@ Réponds en JSON avec cette structure EXACTE :
             if len(table.rows[1].cells) >= 2:
                 travaux = data.get("travaux_confies", "")
                 table.rows[1].cells[1].text = travaux if travaux else ""
-            
-            # Ligne 2 : Planning
-            if len(table.rows[2].cells) >= 2:
-                debut = data.get("date_debut", "")
-                fin = data.get("date_fin", "")
-                table.rows[2].cells[1].text = f"Date de début : {debut}\tDate de fin : {fin}"
-            
-            # Ligne 3 : Effectifs
-            if len(table.rows[3].cells) >= 2:
-                moyen = data.get("effectif_moyen", "")
-                pointe = data.get("effectif_pointe", "")
-                table.rows[3].cells[1].text = f"Effectif moyen : {moyen}\tEffectif de pointe : {pointe}"
     
     def _fill_hygiene_table(self, table, data: Dict):
         """Remplit le tableau mesures d'hygiène (TABLE 2)."""
