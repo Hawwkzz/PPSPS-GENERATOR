@@ -27,18 +27,26 @@
           </svg>
         </div>
         <div class="text-sm text-amber-900">
-          <p class="font-bold text-base mb-2">⚠️ Important : Document à réviser obligatoirement</p>
-          <p class="mb-2">Le PPSPS généré est une <strong>ébauche automatisée</strong> qui nécessite impérativement une <strong>révision et validation humaine</strong> par un professionnel qualifié (coordonnateur SPS, responsable travaux, etc.) avant toute utilisation sur chantier.</p>
-          <p class="text-xs">PPSPS Generator décline toute responsabilité en cas d'utilisation d'un document non préalablement contrôlé, modifié et validé par un expert compétent. Ce service est un outil d'aide à la rédaction, non un substitut au jugement professionnel.</p>
+          <p class="font-bold text-base mb-2">Important : Document à réviser obligatoirement</p>
+          <p class="mb-2">
+            Le PPSPS généré est une <strong>ébauche automatisée</strong> qui nécessite impérativement une
+            <strong>révision et validation humaine</strong> par un professionnel qualifié (coordonnateur SPS,
+            responsable travaux, etc.) avant toute utilisation sur chantier.
+          </p>
+          <p class="text-xs">
+            PPSPS Generator décline toute responsabilité en cas d'utilisation d'un document non préalablement contrôlé,
+            modifié et validé par un expert compétent. Ce service est un outil d'aide à la rédaction, non un substitut
+            au jugement professionnel.
+          </p>
         </div>
       </div>
     </div>
   </section>
 
   <!-- Actions rapides -->
-  <section class="grid md:grid-cols-2 gap-6">
+  <section class="grid md:grid-cols-2 gap-6 items-stretch">
     <!-- Upload fichier -->
-    <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+    <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden flex flex-col">
       <div class="bg-gradient-to-r from-emerald-50 to-emerald-100/50 border-b border-emerald-200 p-5">
         <div class="flex items-center gap-3">
           <div class="p-2 bg-emerald-600 rounded-lg">
@@ -50,25 +58,40 @@
         </div>
       </div>
 
-      <form method="post" action="/ui/projects/{{ p.id }}/files/upload" enctype="multipart/form-data" class="p-5 space-y-4">
+      <form method="post"
+            action="/ui/projects/{{ p.id }}/files/upload"
+            enctype="multipart/form-data"
+            class="p-5 flex flex-col gap-4 flex-1">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        
-        <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 hover:border-blue-400 transition-colors">
-          <input type="file" name="file" accept=".pdf,.docx,.txt,.md,.png,.jpg,.jpeg" required
-                 class="block w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"/>
+
+        <!-- Zone input fichier : même hauteur que le message bleu à droite -->
+        <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 hover:border-blue-400 transition-colors
+                    min-h-[88px] flex items-center">
+          <input type="file"
+                 name="file"
+                 accept=".pdf,.docx,.txt,.md,.png,.jpg,.jpeg"
+                 required
+                 class="block w-full text-sm text-slate-600
+                        file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0
+                        file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700
+                        hover:file:bg-blue-100 cursor-pointer"/>
         </div>
 
-        <button type="submit"
-                class="w-full py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-lg font-semibold hover:from-emerald-700 hover:to-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 shadow-lg shadow-emerald-600/30 hover:shadow-emerald-600/50 transition-all">
-          Uploader
-        </button>
+        <div class="mt-auto space-y-2">
+          <button type="submit"
+                  class="w-full py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-lg font-semibold hover:from-emerald-700 hover:to-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 shadow-lg shadow-emerald-600/30 hover:shadow-emerald-600/50 transition-all">
+            Uploader
+          </button>
 
-        <p class="text-xs text-slate-500 text-center">PDF, DOCX, TXT, MD, PNG, JPG acceptés</p>
+          <p class="text-xs text-slate-500 text-center">
+            PDF, DOCX, TXT, MD, PNG, JPG acceptés
+          </p>
+        </div>
       </form>
     </div>
 
-    <!-- Générer PPSPS avec loading amélioré -->
-    <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+    <!-- Générer PPSPS -->
+    <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden flex flex-col">
       <div class="bg-gradient-to-r from-blue-50 to-blue-100/50 border-b border-blue-200 p-5">
         <div class="flex items-center gap-3">
           <div class="p-2 bg-blue-600 rounded-lg">
@@ -80,41 +103,51 @@
         </div>
       </div>
 
-      <!-- Info -->
-      {% if upload_warning %}
-      <div class="mx-5 mt-5 mb-0 p-3 bg-blue-50 border-l-4 border-blue-400 rounded-r-lg">
-        <div class="flex items-start gap-2">
-          <svg class="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-          </svg>
-          <p class="text-xs text-blue-900">Vérifiez que tous vos documents sont uploadés. La génération coûte 1 jeton et ne peut pas être annulée.</p>
-        </div>
-      </div>
-      {% endif %}
-
-      <form id="gen-form" method="post" action="/ui/projects/{{ p.id }}/gen/ppsps" class="p-5 space-y-4">
+      <form id="gen-form"
+            method="post"
+            action="/ui/projects/{{ p.id }}/gen/ppsps"
+            class="p-5 flex flex-col gap-4 flex-1">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         {% set has_files = files|length > 0 %}
-        
-        <button 
-          type="submit" 
-          id="gen-button"
-          {{ 'disabled' if not has_files else '' }}
-          class="w-full py-3 rounded-lg font-semibold transition-all relative overflow-hidden {{ 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-600/30 hover:shadow-blue-600/50' if has_files else 'bg-slate-200 text-slate-400 cursor-not-allowed' }}"
-        >
-          <span class="btn-text">Générer le PPSPS</span>
-          <span class="btn-loading hidden absolute inset-0 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700">
-            <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span class="text-white font-semibold">Génération en cours...</span>
-          </span>
-        </button>
 
-        <p class="text-xs text-slate-500 text-center">
-          {{ 'Le document sera généré à partir des pièces uploadées. Cela peut prendre plusieurs minutes.' if has_files else 'Ajoutez au moins une pièce pour activer la génération.' }}
-        </p>
+        <!-- Message bleu : même taille que la zone upload -->
+        <div class="rounded-lg p-4 bg-blue-50 border border-blue-200 min-h-[88px] flex items-center">
+          <div class="flex items-start gap-2">
+            <svg class="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+            </svg>
+            <p class="text-xs text-blue-900">
+              {% if upload_warning %}
+                Vérifiez que tous vos documents sont uploadés. La génération coûte 1 jeton et ne peut pas être annulée.
+              {% else %}
+                La génération utilisera les pièces uploadées pour produire un PPSPS automatisé.
+              {% endif %}
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-auto space-y-2">
+          <button 
+            type="submit" 
+            id="gen-button"
+            {{ 'disabled' if not has_files else '' }}
+            class="w-full py-3 rounded-lg font-semibold transition-all relative overflow-hidden
+                   {{ 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-600/30 hover:shadow-blue-600/50' if has_files else 'bg-slate-200 text-slate-400 cursor-not-allowed' }}"
+          >
+            <span class="btn-text">Générer le PPSPS</span>
+            <span class="btn-loading hidden absolute inset-0 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700">
+              <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span class="text-white font-semibold">Génération en cours...</span>
+            </span>
+          </button>
+
+          <p class="text-xs text-slate-500 text-center">
+            {{ 'Le document sera généré à partir des pièces uploadées. Cela peut prendre plusieurs minutes.' if has_files else 'Ajoutez au moins une pièce pour activer la génération.' }}
+          </p>
+        </div>
       </form>
     </div>
   </section>
