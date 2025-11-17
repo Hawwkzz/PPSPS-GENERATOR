@@ -36,9 +36,9 @@
   </section>
 
   <!-- Actions rapides -->
-  <section class="grid md:grid-cols-2 gap-6 items-stretch">
+  <section class="grid md:grid-cols-2 gap-6">
     <!-- Upload fichier -->
-    <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden flex flex-col">
+    <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
       <div class="bg-gradient-to-r from-emerald-50 to-emerald-100/50 border-b border-emerald-200 p-5">
         <div class="flex items-center gap-3">
           <div class="p-2 bg-emerald-600 rounded-lg">
@@ -50,30 +50,25 @@
         </div>
       </div>
 
-      <form method="post" action="/ui/projects/{{ p.id }}/files/upload" enctype="multipart/form-data" class="p-5 space-y-4 flex-1 flex flex-col justify-between">
+      <form method="post" action="/ui/projects/{{ p.id }}/files/upload" enctype="multipart/form-data" class="p-5 space-y-4">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         
-        <div class="flex-1">
-          <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 hover:border-blue-400 transition-colors">
+        <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 hover:border-blue-400 transition-colors">
           <input type="file" name="file" accept=".pdf,.docx,.txt,.md,.png,.jpg,.jpeg" required
                  class="block w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"/>
         </div>
 
-        </div>
-        
-        <div>
-          <button type="submit"
-                  class="w-full py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-lg font-semibold hover:from-emerald-700 hover:to-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 shadow-lg shadow-emerald-600/30 hover:shadow-emerald-600/50 transition-all">
+        <button type="submit"
+                class="w-full py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-lg font-semibold hover:from-emerald-700 hover:to-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 shadow-lg shadow-emerald-600/30 hover:shadow-emerald-600/50 transition-all">
           Uploader
         </button>
 
-          <p class="text-xs text-slate-500 text-center">PDF, DOCX, TXT, MD, PNG, JPG acceptés</p>
-        </div>
+        <p class="text-xs text-slate-500 text-center">PDF, DOCX, TXT, MD, PNG, JPG acceptés</p>
       </form>
     </div>
 
     <!-- Générer PPSPS avec loading amélioré -->
-    <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden flex flex-col">
+    <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
       <div class="bg-gradient-to-r from-blue-50 to-blue-100/50 border-b border-blue-200 p-5">
         <div class="flex items-center gap-3">
           <div class="p-2 bg-blue-600 rounded-lg">
@@ -85,10 +80,9 @@
         </div>
       </div>
 
-      
-      <!-- Avertissement -->
+      <!-- Info upload -->
       {% if upload_warning %}
-      <div class="mx-5 mt-5 p-3 bg-blue-50 border-l-4 border-blue-400 rounded-r-lg">
+      <div class="mx-5 mt-5 mb-0 p-3 bg-blue-50 border-l-4 border-blue-400 rounded-r-lg">
         <div class="flex items-start gap-2">
           <svg class="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
@@ -97,15 +91,12 @@
         </div>
       </div>
       {% endif %}
-      
-      <form id="gen-form" method="post" action="/ui/projects/{{ p.id }}/gen/ppsps" class="p-5 space-y-4 flex-1 flex flex-col justify-between">
+
+      <form id="gen-form" method="post" action="/ui/projects/{{ p.id }}/gen/ppsps" class="p-5 space-y-4">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         {% set has_files = files|length > 0 %}
         
-        <div class="flex-1"></div>
-        
-        <div>
-          <button 
+        <button 
           type="submit" 
           id="gen-button"
           {{ 'disabled' if not has_files else '' }}
@@ -121,10 +112,9 @@
           </span>
         </button>
 
-          <p class="text-xs text-slate-500 text-center">
-            {{ 'Le document sera généré à partir des pièces uploadées. Cela peut prendre plusieurs minutes.' if has_files else 'Ajoutez au moins une pièce pour activer la génération.' }}
-          </p>
-        </div>
+        <p class="text-xs text-slate-500 text-center">
+          {{ 'Le document sera généré à partir des pièces uploadées. Cela peut prendre plusieurs minutes.' if has_files else 'Ajoutez au moins une pièce pour activer la génération.' }}
+        </p>
       </form>
     </div>
   </section>
