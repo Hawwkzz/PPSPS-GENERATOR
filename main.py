@@ -22,6 +22,25 @@ logger = logging.getLogger("sps")
 if not logger.handlers:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
+# ===== PLACEHOLDERS FORMULAIRE =====
+FORM_PLACEHOLDERS = {
+    "{{NOM_PROJET}}": "",
+    "{{ADRESSE_CHANTIER}}": "",
+    "{{REFERENCE_AFFAIRE}}": "",
+    "{{TELEPHONE_CHANTIER}}": "",
+    "{{DUREE_SEMAINES}}": "",
+    "{{EFFECTIF_MAXIMUM}}": "",
+    "{{LOTS_TRAVAUX}}": "",
+    "{{NOM_ENTREPRISE}}": "",
+    "{{ADRESSE_ENTREPRISE}}": "",
+    "{{TELEPHONE_ENTREPRISE}}": "",
+    "{{EMAIL_ENTREPRISE}}": "",
+    "{{RESPONSABLE_TRAVAUX}}": "",
+    "{{MAITRE_OUVRAGE}}": "",
+    "{{MAITRE_OEUVRE}}": ""
+}
+
+
 
 # ===== FastAPI / Starlette =====
 from fastapi import FastAPI, Body, Request, Form, Depends, HTTPException, UploadFile, File
@@ -379,213 +398,149 @@ import re
 import json
 
 
-
 def replace_placeholders_in_doc(doc, placeholder_values):
-    """Remplace tous les {{PLACEHOLDERS}} dans le DOCX (texte, tableaux, en-têtes/pieds).
-    Version simple : on écrase le texte des paragraphes / cellules.
-    """
-
-    def replace_in_text(text: str) -> str:
-        if not text:
-            return text
-        new = text
+    """Remplace tous les placeholders dans un document DOCX de manière robuste."""
+    from docx import Document
+    
+    logger.info("[PLACEHOLDERS] Début du remplacement dans le document")
+    replacements_count = 0
+    
+    def replace_in_paragraph(paragraph, placeholder_values, location=""):
+        """Remplace les placeholders dans un paragraphe, même s'ils sont fragmentés."""
+        nonlocal replacements_count
+        
         for key, value in placeholder_values.items():
-            new = new.replace(key, str(value) if value else "")
-        return new
-
-    # 1) Paragraphes "simples" du document
-    for para in doc.paragraphs:
-        para.text = replace_in_text(para.text)
-
-    # 2) Tableaux (toutes les cellules)
-    for table in doc.tables:
-        for row in table.rows:
-            for cell in row.cells:
-                cell.text = replace_in_text(cell.text)
-
-    # 3) En-têtes / pieds de page de chaque section
-    for section in doc.sections:
-        # Header
-        header = section.header
-        for para in header.paragraphs:
-            para.text = replace_in_text(para.text)
-        # Footer
-        footer = section.footer
-        for para in footer.paragraphs:
-            para.text = replace_in_text(para.text)
-
-
-
-
-# ==============================================================================
-# TEMPLATE FILLER CORRIGÉ - À COPIER DANS main.py
-# ==============================================================================
-# 
-# REMPLACE LA CLASSE TemplateFiller EXISTANTE PAR CELLE-CI
-#
-# CORRECTIONS APPORTÉES :
-# ✅ Accès PAR INDEX aux 7 tableaux (impossible de les perdre)
-# ✅ Remplacement run par run (préserve structure)  
-# ✅ Détection exhaustive des sous-traitants
-# ✅ Remplissage automatique du tableau SOUS-TRAITANTS
-# ✅ Annexes complètes avec pages séparées par catégorie
-# ✅ Ajout de lignes pour risques (sans supprimer)
-# ==============================================================================
-
-from docx import Document
-from docx.shared import Pt, Inches, RGBColor
-from docx.enum.text import WD_ALIGN_PARAGRAPH
-from typing import Dict, Any, List
-import json
-import os
-import logging
-
-logger = logging.getLogger(__name__)
-
+            if key in paragraph.text:
+                # Reconstruire le texte en fusionnant les runs
+                full_text = paragraph.text
+                new_text = full_text.replace(key, str(value) if value else "")
+                
+                # Si le texte a changé, remplacer tout le paragraphe
+                if new_text != full_text:
+                    logger.info(f"[PLACEHOLDERS] Trouvé '{key}' dans {location}")
+                    logger.info(f"  Avant: {full_text[:100]}")
+                    logger.info(f"  Après: {new_text[:100]}")
+                    replacements_count += 1
+                    
+                    # Garder le style du premier run
+                    first_run_style = paragraph.runs[0].style if paragraph.runs else None
+                    first_run_font = paragraph.runs[0].font if paragraph.runs else None
+                    
+                    # Supprimer tous les runs
+                    for _ in range(len(paragraph.runs)):
+                        paragraph._element.remove(paragraph.runs[0]._element)
+                    
+                    # Ajouter un nouveau run avec le texte remplacé
+                    new_run = paragraph.add_run(new_text)
+                    if first_run_style:
+                        new_run.style = first_run_style
+    
+    # Remplacer dans les paragraphes
+    logger.info("[PLACEHOLDERS] Scan des paragraphes...")
+    for i, paragraph in enumerate(doc.paragraphs):
+        replace_in_paragraph(paragraph, placeholder_values, f"paragraphe {i}")
+    
+    # Remplacer dans les tableaux
+    logger.info("[PLACEHOLDERS] Scan des tableaux...")
+    for t_idx, table in enumerate(doc.tables):
+        for r_idx, row in enumerate(table.rows):
+            for c_idx, cell in enumerate(row.cells):
+                for p_idx, paragraph in enumerate(cell.paragraphs):
+                    replace_in_paragraph(paragraph, placeholder_values, f"tableau {t_idx}, ligne {r_idx}, cellule {c_idx}, para {p_idx}")
+    
+    # Remplacer dans les en-têtes et pieds de page
+    logger.info("[PLACEHOLDERS] Scan des en-têtes et pieds de page...")
+    for s_idx, section in enumerate(doc.sections):
+        for p_idx, paragraph in enumerate(section.header.paragraphs):
+            replace_in_paragraph(paragraph, placeholder_values, f"en-tête section {s_idx}, para {p_idx}")
+        
+        for p_idx, paragraph in enumerate(section.footer.paragraphs):
+            replace_in_paragraph(paragraph, placeholder_values, f"pied de page section {s_idx}, para {p_idx}")
+    
+    logger.info(f"[PLACEHOLDERS] Remplacement terminé: {replacements_count} placeholders remplacés")
 
 class TemplateFiller:
-    """
-    Système de remplissage ULTRA-ROBUSTE du template PPSPS.
-    
-    Structure du template (FIXE - 7 tableaux) :
-    - Tableau 0 : Infos entreprise (1 ligne)
-    - Tableau 1 : CHANTIER (21 lignes)
-    - Tableau 2 : SOUS-TRAITANTS (23 lignes)
-    - Tableau 3 : Description opération (4 lignes)
-    - Tableau 4 : Hygiène (9 lignes)
-    - Tableau 5 : Risques travaux (3 lignes en-tête)
-    - Tableau 6 : Risques environnement (5 lignes)
-    
-    PRINCIPE : Accès par index, remplissage readonly, AUCUNE suppression.
-    """
+    """Remplit intelligemment le template PPSPS avec les données du projet."""
     
     def __init__(self, template_path: str, form_data: dict = None):
+        """
+        Args:
+            template_path: Chemin vers le template DOCX original
+            form_data: Données du formulaire pour les placeholders
+        """
         self.template_path = template_path
         self.doc = Document(template_path)
         self.form_data = form_data or {}
         
-        # Vérification de sanité
-        if len(self.doc.tables) != 7:
-            logger.warning(f"⚠️ Template anormal : {len(self.doc.tables)} tableaux au lieu de 7")
-    
-    def fill_with_ai(self, project_data: Dict[str, Any], evidence_pack: str,
+    def fill_with_ai(self, project_data: Dict[str, Any], evidence_pack: str, 
                      img_catalog: List[Dict], openai_client, model: str) -> Document:
         """
-        Remplit le template via IA SANS toucher à la structure.
+        Remplit le template en utilisant l'IA pour analyser les pièces.
         
         Args:
-            project_data: Données du formulaire
+            project_data: Données du projet (formulaire)
             evidence_pack: Extraits des pièces uploadées
             img_catalog: Liste des images disponibles
-            openai_client: Client OpenAI
-            model: Modèle à utiliser
+            openai_client: Client OpenAI configuré
+            model: Nom du modèle à utiliser
             
         Returns:
-            Document rempli
+            Document DOCX rempli
         """
+        # 0. Remplacer les placeholders du formulaire AVANT l'IA
+        logger.info("[PPSPS] Étape 0: Remplacement des placeholders du formulaire")
+        logger.info(f"[PPSPS] form_data reçu: {self.form_data}")
+        placeholder_values = self._prepare_placeholder_values()
+        replace_placeholders_in_doc(self.doc, placeholder_values)
+        logger.info("[PPSPS] Placeholders remplacés, passage à l'IA")
         
-        logger.info(f"[TEMPLATE] 🔧 Début - {len(self.doc.tables)} tableaux présents")
+        # 1. Créer le prompt pour l'IA
+        prompt = self._build_fill_prompt(project_data, evidence_pack, img_catalog)
         
-        # ÉTAPE 1 : Remplacer placeholders (run par run, structure intacte)
-        self._replace_placeholders_safe(project_data)
-        
-        logger.info(f"[TEMPLATE] ✅ Après placeholders : {len(self.doc.tables)} tableaux")
-        
-        # ÉTAPE 2 : Extraction IA
-        prompt = self._build_extraction_prompt(project_data, evidence_pack, img_catalog)
-        
+        # 2. Appeler l'IA pour obtenir les données de remplissage
         messages = [
             {
                 "role": "system",
-                "content": "Tu es un expert coordinateur SPS. Tu extrais TOUTES les infos des documents BTP pour remplir un PPSPS. Réponds UNIQUEMENT en JSON valide."
+                "content": "Tu es un expert coordinateur SPS qui remplit des PPSPS. "
+                          "Tu analyses les documents fournis et extrais les informations pertinentes. "
+                          "Tu réponds UNIQUEMENT en JSON valide."
             },
-            {"role": "user", "content": prompt}
+            {
+                "role": "user",
+                "content": prompt
+            }
         ]
         
-        try:
-            response = openai_client.chat.completions.create(
-                model=model,
-                temperature=0.2,
-                max_tokens=20000,
-                messages=messages
-            )
-            
-            raw = response.choices[0].message.content.strip()
-            raw = raw.replace('```json', '').replace('```', '').strip()
-            fill_data = json.loads(raw)
-            
-            logger.info("[TEMPLATE] ✅ Données IA extraites")
-            
-            # ÉTAPE 3 : Remplissage par index (lecture seule)
-            self._fill_by_index(fill_data)
-            
-            logger.info(f"[TEMPLATE] ✅ Après remplissage : {len(self.doc.tables)} tableaux")
-            
-            # ÉTAPE 4 : Annexes complètes
-            self._create_annexes_pages(img_catalog)
-            
-        except json.JSONDecodeError as e:
-            logger.error(f"[TEMPLATE] ❌ JSON invalide : {e}")
-        except Exception as e:
-            logger.error(f"[TEMPLATE] ❌ Erreur : {e}")
+        response = openai_client.chat.completions.create(
+            model=model,
+            temperature=0.2,
+            messages=messages
+        )
         
-        logger.info(f"[TEMPLATE] ✅ FIN - {len(self.doc.tables)} tableaux présents")
+        # 3. Parser la réponse JSON
+        raw_response = response.choices[0].message.content.strip()
+        # Nettoyer les backticks markdown si présents
+        raw_response = raw_response.replace('```json', '').replace('```', '').strip()
+        fill_data = json.loads(raw_response)
+        
+        # 4. Remplir le template avec les données
+        self._fill_document(fill_data, img_catalog)
+        
         return self.doc
     
-    def _replace_placeholders_safe(self, project_data: Dict):
-        """
-        Remplace les {{PLACEHOLDERS}} RUN PAR RUN.
-        AUCUNE modification de la structure du document.
-        """
+    def _build_fill_prompt(self, project_data: Dict, evidence_pack: str, 
+                          img_catalog: List[Dict]) -> str:
+        """Construit le prompt pour guider l'IA dans le remplissage."""
         
-        replacements = {
-            "{{NOM_ENTREPRISE}}": project_data.get("company_name", ""),
-            "{{ADRESSE_CHANTIER}}": project_data.get("address", ""),
-            "{{TELEPHONE_CHANTIER}}": project_data.get("site_phone", ""),
-            "{{REFERENCE_AFFAIRE}}": project_data.get("project_reference", ""),
-            "{{RESPONSABLE_TRAVAUX}}": project_data.get("site_manager_name", ""),
-            "{{MAITRE_OUVRAGE}}": project_data.get("owner_name", ""),
-            "{{MAITRE_OEUVRE}}": project_data.get("architect_name", ""),
-            "{{EFFECTIF_MAXIMUM}}": str(project_data.get("workforce", "")),
-        }
-        
-        def safe_replace(text: str) -> str:
-            """Remplace UNIQUEMENT les placeholders présents."""
-            if not text:
-                return text
-            result = text
-            for ph, val in replacements.items():
-                if ph in result:
-                    result = result.replace(ph, str(val) if val else "")
-            return result
-        
-        # Parcourir UNIQUEMENT les tableaux (évite side-effects sur paragraphes)
-        for tbl in self.doc.tables:
-            for row in tbl.rows:
-                for cell in row.cells:
-                    for para in cell.paragraphs:
-                        # Run par run (préserve formatting)
-                        for run in para.runs:
-                            if "{{" in run.text:
-                                run.text = safe_replace(run.text)
-        
-        logger.info("[TEMPLATE] ✅ Placeholders remplacés (structure préservée)")
-    
-    def _build_extraction_prompt(self, project_data: Dict, evidence_pack: str,
-                                 img_catalog: List[Dict]) -> str:
-        """
-        Construit le prompt pour extraction EXHAUSTIVE.
-        Insiste particulièrement sur la détection des sous-traitants.
-        """
-        return f"""Tu dois extraire TOUTES les informations pour remplir un PPSPS complet.
+        return f"""Tu dois extraire et structurer les informations pour remplir un PPSPS.
 
 🎯 RÈGLE ABSOLUE : PRIORITÉ DES SOURCES
-1. **TOUJOURS utiliser EN PRIORITÉ les informations des PIÈCES UPLOADÉES**
+1. **TOUJOURS utiliser EN PRIORITÉ les informations des PIÈCES UPLOADÉES** (extraits ci-dessous)
 2. Le **formulaire** sert UNIQUEMENT de **FALLBACK** si l'info est absente des pièces
 3. Si une info est trouvée dans les pièces, l'utiliser MÊME si le formulaire contient autre chose
 
 📄 PIÈCES UPLOADÉES (PRIORITÉ ABSOLUE) :
-{evidence_pack[:15000]}
+{evidence_pack}
 
 📝 FORMULAIRE (FALLBACK UNIQUEMENT) :
 {json.dumps(project_data, ensure_ascii=False, indent=2)}
@@ -593,458 +548,437 @@ class TemplateFiller:
 🖼️ IMAGES DISPONIBLES :
 {json.dumps(img_catalog, ensure_ascii=False, indent=2)}
 
-🚨 JSON ATTENDU (extraction EXHAUSTIVE) :
+Réponds en JSON avec cette structure EXACTE :
 
 {{
-  "chantier": {{
-    "adresse": "adresse complète du chantier",
-    "telephone": "téléphone chantier",
-    "reference_affaire": "référence affaire",
-    "responsable_travaux": "nom responsable travaux",
-    "maitre_ouvrage": {{
-      "nom": "nom maître d'ouvrage",
-      "adresse": "adresse",
-      "telephone": "téléphone"
-    }},
-    "maitre_oeuvre": {{
-      "nom": "nom maître d'œuvre",
-      "adresse": "adresse",
-      "telephone": "téléphone"
-    }},
-    "csps": {{
-      "nom": "nom coordonnateur SPS",
-      "telephone": "téléphone",
-      "email": "email"
-    }},
-    "description_operation": "description DÉTAILLÉE de l'opération/chantier",
-    "nature_travaux": "nature des travaux / lots concernés"
-  }},
-  
-  "sous_traitants": [
-    {{
-      "nom": "Nom entreprise sous-traitante 1",
-      "adresse": "adresse complète",
-      "telephone": "téléphone",
-      "email": "email",
-      "responsable": "nom du responsable",
-      "travaux_confies": "description des travaux sous-traités"
-    }}
-  ],
-  
-  "planning": {{
+  "informations_generales": {{
+    "nom_entreprise": "...",
+    "telephone": "...",
+    "adresse": "...",
+    "email": "...",
+    "fax": "...",
+    "nom_chef_entreprise": "...",
+    "description_operation": "Description détaillée de l'opération/chantier",
+    "lot": "Lot de l'entreprise",
+    "travaux_confies": "Description des travaux confiés à l'entreprise",
     "date_debut": "JJ/MM/AAAA",
-    "date_fin": "JJ/MM/AAAA"
+    "date_fin": "JJ/MM/AAAA",
+    "effectif_moyen": "nombre",
+    "effectif_pointe": "nombre"
   }},
   
-  "effectifs": {{
-    "effectif_moyen": 0,
-    "effectif_pointe": 0
+  "organismes_prevention": {{
+    "medecine_travail": {{"nom": "...", "telephone": "..."}},
+    "inspecteur_travail": {{"nom": "...", "telephone": "..."}},
+    "csps": {{"nom": "...", "telephone": "..."}},
+    "carsat": {{"nom": "...", "telephone": "..."}}
   }},
   
   "mesures_hygiene": {{
     "vestiaires": {{
-      "description": "description vestiaires (conformité, équipements)",
-      "emplacement": "emplacement précis",
+      "description": "Description des vestiaires",
+      "emplacement": "Lieu",
       "date_service": "JJ/MM/AAAA"
     }},
     "sanitaires": {{
-      "description": "description sanitaires",
-      "emplacement": "emplacement",
+      "description": "Description des sanitaires",
+      "emplacement": "Lieu",
       "date_service": "JJ/MM/AAAA"
     }},
     "restauration": {{
-      "description": "description restauration/réfectoire",
-      "emplacement": "emplacement",
+      "description": "Description de la restauration",
+      "emplacement": "Lieu",
       "date_service": "JJ/MM/AAAA"
     }}
   }},
   
+  "secours_evacuation": {{
+    "pompiers": "18 ou 112",
+    "samu": "15",
+    "police": "17",
+    "centre_antipoison": "...",
+    "sst_chantier": [{{"nom": "...", "telephone": "..."}}],
+    "point_rassemblement": "Description du point de rassemblement",
+    "consignes_specifiques": "Consignes spécifiques au chantier"
+  }},
+  
   "risques_travaux": [
     {{
-      "phase": "Phase de travail / Activité",
-      "moyens": "Matériels, équipements, produits utilisés",
-      "risques_salaries": "Risques pour les salariés de l'entreprise",
+      "phase": "Phase de travail 1",
+      "moyens": "Matériels, équipements utilisés",
+      "risques_entreprise": "Risques pour nos salariés",
       "risques_autres": "Risques pour les autres intervenants",
-      "mesures_prevention": "Mesures de prévention DÉTAILLÉES (EPI, procédures, formations)"
+      "prevention": "Mesures de prévention mises en place"
     }}
   ],
   
   "risques_environnement": [
     {{
       "categorie": "Déplacements du personnel sur le chantier",
-      "contraintes": "Contraintes liées à l'environnement",
-      "risques_autres": "Risques que font courir les autres intervenants",
+      "contraintes_environnement": "Contraintes liées à l'environnement",
+      "risques_autres_intervenants": "Risques des autres intervenants",
       "prevention": "Moyens de prévention",
       "observations": "Observations éventuelles"
     }},
     {{
       "categorie": "Organisation du chantier",
-      "contraintes": "...",
-      "risques_autres": "...",
+      "contraintes_environnement": "...",
+      "risques_autres_intervenants": "...",
       "prevention": "...",
       "observations": "..."
     }},
     {{
       "categorie": "Autres",
-      "contraintes": "...",
-      "risques_autres": "...",
+      "contraintes_environnement": "...",
+      "risques_autres_intervenants": "...",
       "prevention": "...",
       "observations": "..."
     }}
   ],
   
-  "secours": {{
-    "pompiers": "18",
-    "samu": "15",
-    "police": "17",
-    "point_rassemblement": "description du point de rassemblement"
-  }},
-  
-  "organismes_prevention": {{
-    "medecine_travail": {{"nom": "...", "telephone": "..."}},
-    "inspecteur_travail": {{"nom": "...", "telephone": "..."}}
-  }}
+  "annexes": [
+    {{
+      "titre": "Plans de circulation",
+      "images": ["fichier1.png", "fichier2.png"],
+      "description": "Description optionnelle"
+    }}
+  ]
 }}
 
-⚠️ RÈGLES CRITIQUES :
-- **EXTRACTION EXHAUSTIVE** : ne rien rater !
-- **SOUS-TRAITANTS** : chercher TOUS les noms d'entreprises, contacts, lots mentionnés dans les pièces. Cherche des indices comme "sous-traitance", "co-traitant", "lot X réalisé par", noms d'entreprises multiples, etc.
-- **RISQUES** : au moins 5-10 risques DÉTAILLÉS par type (phases de travail + environnement)
-- **Info introuvable** = laisser chaîne vide ""
-- **Être FACTUEL** : pas d'invention, uniquement ce qui est dans les documents
+⚠️ RÈGLES IMPORTANTES :
+- Si une info n'est pas trouvée : laisser chaîne vide "" ou null
+- Pour les téléphones : format exact trouvé dans les docs (ex: "01 23 45 67 89")
+- Pour les dates : format JJ/MM/AAAA
+- Pour les risques : être FACTUEL et PRÉCIS (pas de généralités)
+- Séparer les différents risques/phases avec des détails distincts
+- Pour les annexes : utiliser UNIQUEMENT les noms de fichiers du catalogue fourni
+- Si pas d'info dans les pièces ET dans le formulaire : laisser vide
 """
     
-    def _fill_by_index(self, fill_data: Dict):
-        """
-        Remplissage PAR INDEX : accès direct aux tableaux connus.
-        AUCUNE suppression, AUCUNE modification de structure.
-        """
+    def _fill_document(self, fill_data: Dict, img_catalog: List[Dict]):
+        """Remplit le document avec les données extraites par l'IA."""
         
-        # Vérifier qu'on a bien 7 tableaux
-        if len(self.doc.tables) != 7:
-            logger.error(f"❌ Tableaux manquants : {len(self.doc.tables)}/7")
-            return
+        # 1. Remplir le premier tableau (informations générales)
+        if len(self.doc.tables) > 0:
+            self._fill_info_table(self.doc.tables[0], fill_data.get("informations_generales", {}))
         
-        # Accès PAR INDEX (lecture seule de la structure)
-        tbl_infos = self.doc.tables[0]  # Index 0 = Infos entreprise
-        tbl_chantier = self.doc.tables[1]  # Index 1 = CHANTIER
-        tbl_sous_traitants = self.doc.tables[2]  # Index 2 = SOUS-TRAITANTS
-        tbl_description = self.doc.tables[3]  # Index 3 = Description opération
-        tbl_hygiene = self.doc.tables[4]  # Index 4 = Hygiène
-        tbl_risques_travaux = self.doc.tables[5]  # Index 5 = Risques travaux
-        tbl_risques_env = self.doc.tables[6]  # Index 6 = Risques environnement
+        # 2. Remplir le deuxième tableau (description opération)
+        if len(self.doc.tables) > 1:
+            self._fill_operation_table(self.doc.tables[1], fill_data.get("informations_generales", {}))
         
-        # Remplir chaque tableau
-        self._fill_table_chantier(tbl_chantier, fill_data.get("chantier", {}))
-        self._fill_table_sous_traitants(tbl_sous_traitants, fill_data.get("sous_traitants", []))
-        self._fill_table_description(tbl_description, fill_data)
-        self._fill_table_hygiene(tbl_hygiene, fill_data.get("mesures_hygiene", {}))
-        self._fill_table_risques_travaux(tbl_risques_travaux, fill_data.get("risques_travaux", []))
-        self._fill_table_risques_env(tbl_risques_env, fill_data.get("risques_environnement", []))
+        # 3. Remplir le tableau hygiène
+        if len(self.doc.tables) > 2:
+            self._fill_hygiene_table(self.doc.tables[2], fill_data.get("mesures_hygiene", {}))
         
-        logger.info("[TEMPLATE] ✅ Tous les tableaux remplis")
+        # 4. Remplir le tableau risques travaux
+        if len(self.doc.tables) > 3:
+            self._fill_risques_travaux_table(self.doc.tables[3], 
+                                            fill_data.get("risques_travaux", []))
+        
+        # 5. Remplir le tableau risques environnement
+        if len(self.doc.tables) > 4:
+            self._fill_risques_env_table(self.doc.tables[4], 
+                                        fill_data.get("risques_environnement", []))
+        
+        # 6. Remplir les sections texte (organismes, secours)
+        self._fill_text_sections(fill_data)
+        
+        # 7. Ajouter les annexes à la fin
+        self._add_annexes(fill_data.get("annexes", []), img_catalog)
     
-    def _fill_table_chantier(self, tbl, chantier: Dict):
-        """Remplit le tableau CHANTIER (index 1 - 21 lignes)."""
-        
-        # Map ligne → donnée
-        mappings = [
-            (1, chantier.get("adresse", "")),  # Adresse du chantier
-            (2, chantier.get("telephone", "")),  # Téléphone du chantier
-            (3, chantier.get("reference_affaire", "")),  # Référence affaire
-            (4, chantier.get("responsable_travaux", "")),  # Responsable travaux
-            (7, chantier.get("maitre_ouvrage", {}).get("nom", "")),  # MO nom
-            (12, chantier.get("maitre_oeuvre", {}).get("nom", "")),  # MOE nom
-        ]
-        
-        for ligne_idx, valeur in mappings:
-            if ligne_idx < len(tbl.rows) and len(tbl.rows[ligne_idx].cells) > 1:
-                if valeur:
-                    tbl.rows[ligne_idx].cells[1].text = valeur
-        
-        logger.info("[TEMPLATE] ✅ Chantier rempli")
     
-    def _fill_table_sous_traitants(self, tbl, sous_traitants: List[Dict]):
-        """
-        Remplit le tableau SOUS-TRAITANTS (index 2 - 23 lignes).
-        Structure : 3 sections (ST1, ST2, ST3).
-        """
-        
-        if not sous_traitants:
-            logger.info("[TEMPLATE] ⚠️ Aucun sous-traitant détecté")
-            return
-        
-        logger.info(f"[TEMPLATE] 🏢 {len(sous_traitants)} sous-traitants détectés")
-        
-        # Structure connue : ST1 lignes 3-8, ST2 lignes 10-15, ST3 lignes 17-22
-        st_sections = [
-            (3, 4, 5, 6, 7, 8),   # ST1 : Nom, Adresse, Tél, Email, Responsable, Travaux
-            (10, 11, 12, 13, 14, 15),  # ST2
-            (17, 18, 19, 20, 21, 22)   # ST3
-        ]
-        
-        for i, st in enumerate(sous_traitants[:3]):  # Maximum 3 ST
-            if i >= len(st_sections):
-                break
-            
-            lignes = st_sections[i]
-            nom_idx, addr_idx, tel_idx, email_idx, resp_idx, travaux_idx = lignes
-            
-            # Remplir chaque champ
-            if nom_idx < len(tbl.rows) and len(tbl.rows[nom_idx].cells) > 1:
-                tbl.rows[nom_idx].cells[1].text = st.get("nom", "")
-            
-            if addr_idx < len(tbl.rows) and len(tbl.rows[addr_idx].cells) > 1:
-                tbl.rows[addr_idx].cells[1].text = st.get("adresse", "")
-            
-            if tel_idx < len(tbl.rows) and len(tbl.rows[tel_idx].cells) > 1:
-                tbl.rows[tel_idx].cells[1].text = st.get("telephone", "")
-            
-            if email_idx < len(tbl.rows) and len(tbl.rows[email_idx].cells) > 1:
-                tbl.rows[email_idx].cells[1].text = st.get("email", "")
-            
-            if resp_idx < len(tbl.rows) and len(tbl.rows[resp_idx].cells) > 1:
-                tbl.rows[resp_idx].cells[1].text = st.get("responsable", "")
-            
-            if travaux_idx < len(tbl.rows) and len(tbl.rows[travaux_idx].cells) > 1:
-                tbl.rows[travaux_idx].cells[1].text = st.get("travaux_confies", "")
-        
-        logger.info("[TEMPLATE] ✅ Sous-traitants remplis")
-    
-    def _fill_table_description(self, tbl, fill_data: Dict):
-        """Remplit le tableau DESCRIPTION OPÉRATION (index 3 - 4 lignes)."""
-        chantier = fill_data.get("chantier", {})
-        planning = fill_data.get("planning", {})
-        
-        # Ligne 0 : Description + Lot
-        if len(tbl.rows) > 0 and len(tbl.rows[0].cells) > 1:
-            tbl.rows[0].cells[1].text = chantier.get("description_operation", "")
-            if len(tbl.rows[0].cells) > 2:
-                tbl.rows[0].cells[2].text = f"Lot : {chantier.get('nature_travaux', '')}"
-        
-        # Ligne 1 : Travaux confiés
-        if len(tbl.rows) > 1 and len(tbl.rows[1].cells) > 1:
-            tbl.rows[1].cells[1].text = chantier.get("nature_travaux", "")
-        
-        # Ligne 2 : Planning
-        if len(tbl.rows) > 2 and len(tbl.rows[2].cells) > 1:
-            debut = planning.get("date_debut", "")
-            fin = planning.get("date_fin", "")
-            tbl.rows[2].cells[1].text = f"Date de début : {debut}\tDate de fin : {fin}"
-        
-        # Ligne 3 : Effectifs (déjà remplis par placeholders)
-        
-        logger.info("[TEMPLATE] ✅ Description remplie")
-    
-    def _fill_table_hygiene(self, tbl, hygiene: Dict):
-        """Remplit le tableau HYGIÈNE (index 4 - 9 lignes)."""
-        
-        # Vestiaires : lignes 1-2
-        vest = hygiene.get("vestiaires", {})
-        if len(tbl.rows) > 1 and len(tbl.rows[1].cells) > 1:
-            tbl.rows[1].cells[1].text = vest.get("description", "")
-        if len(tbl.rows) > 2:
-            if len(tbl.rows[2].cells) > 1:
-                tbl.rows[2].cells[1].text = vest.get("emplacement", "")
-            if len(tbl.rows[2].cells) > 2:
-                tbl.rows[2].cells[2].text = f"Date de mise en service : {vest.get('date_service', '')}"
-        
-        # Sanitaires : lignes 4-5
-        sani = hygiene.get("sanitaires", {})
-        if len(tbl.rows) > 4 and len(tbl.rows[4].cells) > 1:
-            tbl.rows[4].cells[1].text = sani.get("description", "")
-        if len(tbl.rows) > 5:
-            if len(tbl.rows[5].cells) > 1:
-                tbl.rows[5].cells[1].text = sani.get("emplacement", "")
-            if len(tbl.rows[5].cells) > 2:
-                tbl.rows[5].cells[2].text = f"Date de mise en service : {sani.get('date_service', '')}"
-        
-        # Restauration : lignes 7-8
-        resto = hygiene.get("restauration", {})
-        if len(tbl.rows) > 7 and len(tbl.rows[7].cells) > 1:
-            tbl.rows[7].cells[1].text = resto.get("description", "")
-        if len(tbl.rows) > 8:
-            if len(tbl.rows[8].cells) > 1:
-                tbl.rows[8].cells[1].text = resto.get("emplacement", "")
-            if len(tbl.rows[8].cells) > 2:
-                tbl.rows[8].cells[2].text = f"Date de mise en service : {resto.get('date_service', '')}"
-        
-        logger.info("[TEMPLATE] ✅ Hygiène remplie")
-    
-    def _fill_table_risques_travaux(self, tbl, risques: List[Dict]):
-        """Remplit le tableau RISQUES TRAVAUX (index 5)."""
-        
-        if not risques:
-            logger.info("[TEMPLATE] ⚠️ Aucun risque travaux")
-            return
-        
-        logger.info(f"[TEMPLATE] ⚠️  {len(risques)} risques travaux détectés")
-        
-        # En-tête : 2 lignes
-        header_rows = 2
-        
-        # Ajouter lignes si besoin (SANS supprimer)
-        while len(tbl.rows) < header_rows + len(risques):
-            tbl.add_row()
-        
-        # Remplir
-        for i, risque in enumerate(risques):
-            row_idx = header_rows + i
-            if row_idx >= len(tbl.rows):
-                break
-            
-            row = tbl.rows[row_idx]
-            if len(row.cells) >= 5:
-                row.cells[0].text = risque.get("phase", "")
-                row.cells[1].text = risque.get("moyens", "")
-                row.cells[2].text = risque.get("risques_salaries", "")
-                row.cells[3].text = risque.get("risques_autres", "")
-                row.cells[4].text = risque.get("mesures_prevention", "")
-        
-        logger.info("[TEMPLATE] ✅ Risques travaux remplis")
-    
-    def _fill_table_risques_env(self, tbl, risques_env: List[Dict]):
-        """Remplit le tableau RISQUES ENVIRONNEMENT (index 6)."""
-        
-        if not risques_env:
-            logger.info("[TEMPLATE] ⚠️ Aucun risque environnement")
-            return
-        
-        logger.info(f"[TEMPLATE] 🌍 {len(risques_env)} risques environnement détectés")
-        
-        # Lignes fixes : 2=Déplacements, 3=Organisation, 4=Autres
-        for risque in risques_env:
-            cat = risque.get("categorie", "").lower()
-            
-            # Déterminer ligne
-            row_idx = None
-            if "déplacement" in cat:
-                row_idx = 2
-            elif "organisation" in cat:
-                row_idx = 3
-            elif "autre" in cat:
-                row_idx = 4
-            
-            if row_idx is None or row_idx >= len(tbl.rows):
-                continue
-            
-            row = tbl.rows[row_idx]
-            if len(row.cells) >= 4:
-                row.cells[1].text = risque.get("contraintes", "")
-                row.cells[2].text = risque.get("risques_autres", "")
-                row.cells[3].text = risque.get("prevention", "")
-                if len(row.cells) > 4:
-                    row.cells[4].text = risque.get("observations", "")
-        
-        logger.info("[TEMPLATE] ✅ Risques environnement remplis")
-    
-    def _create_annexes_pages(self, img_catalog: List[Dict]):
-        """
-        Crée de VRAIES pages d'annexes avec TOUTES les images groupées par catégorie.
-        Chaque catégorie = 1 page dédiée.
-        """
-        
-        if not img_catalog:
-            logger.info("[TEMPLATE] ⚠️ Aucune image pour annexes")
-            return
-        
-        logger.info(f"[TEMPLATE] 📎 Création annexes avec {len(img_catalog)} images")
-        
-        # Saut de page avant annexes
-        self.doc.add_page_break()
-        
-        # Titre principal ANNEXES
-        title_p = self.doc.add_paragraph()
-        title_r = title_p.add_run("ANNEXES")
-        title_r.bold = True
-        title_r.font.size = Pt(18)
-        title_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        
-        # Grouper images par catégorie
-        annexes = {
-            "Plans de circulation / PICH": [],
-            "Plans de levage / Manutention": [],
-            "Plans réseaux / DICT-DT": [],
-            "FDS / Produits chimiques": [],
-            "Documents divers": []
+    def _prepare_placeholder_values(self) -> dict:
+        """Prépare les valeurs des placeholders à partir des données du formulaire."""
+        values = {
+            "{{NOM_PROJET}}": self.form_data.get("name", ""),
+            "{{ADRESSE_CHANTIER}}": self.form_data.get("address", ""),
+            "{{REFERENCE_AFFAIRE}}": self.form_data.get("project_reference", ""),
+            "{{TELEPHONE_CHANTIER}}": self.form_data.get("site_phone", ""),
+            "{{DUREE_SEMAINES}}": str(self.form_data.get("duration_weeks", "")) if self.form_data.get("duration_weeks") else "",
+            "{{EFFECTIF_MAXIMUM}}": str(self.form_data.get("workforce", "")) if self.form_data.get("workforce") else "",
+            "{{LOTS_TRAVAUX}}": self.form_data.get("works_csv", ""),
+            "{{NOM_ENTREPRISE}}": self.form_data.get("company_name", ""),
+            "{{ADRESSE_ENTREPRISE}}": self.form_data.get("company_address", ""),
+            "{{TELEPHONE_ENTREPRISE}}": self.form_data.get("company_phone", ""),
+            "{{EMAIL_ENTREPRISE}}": self.form_data.get("company_email", ""),
+            "{{RESPONSABLE_TRAVAUX}}": self.form_data.get("site_manager_name", ""),
+            "{{MAITRE_OUVRAGE}}": self.form_data.get("owner_name", ""),
+            "{{MAITRE_OEUVRE}}": self.form_data.get("architect_name", ""),
         }
         
-        for img in img_catalog:
-            fn = img.get("file", "").lower()
-            
-            if "circul" in fn or "pich" in fn:
-                annexes["Plans de circulation / PICH"].append(img)
-            elif "levage" in fn or "grue" in fn:
-                annexes["Plans de levage / Manutention"].append(img)
-            elif "dict" in fn or "reseau" in fn or "réseau" in fn:
-                annexes["Plans réseaux / DICT-DT"].append(img)
-            elif "fds" in fn or "produit" in fn or "chimique" in fn:
-                annexes["FDS / Produits chimiques"].append(img)
-            else:
-                annexes["Documents divers"].append(img)
+        # LOG: Afficher les valeurs des placeholders
+        logger.info("[PLACEHOLDERS] Valeurs préparées:")
+        for key, val in values.items():
+            logger.info(f"  {key} = '{val}'")
         
-        # Créer une page par catégorie (si images présentes)
-        for cat_name, imgs in annexes.items():
-            if not imgs:
-                continue
+        return values
+
+    def _fill_info_table(self, table, data: Dict):
+        """Remplit le tableau d'informations générales (TABLE 0)."""
+        if len(table.rows) > 0 and len(table.rows[0].cells) > 0:
+            cell = table.rows[0].cells[0]
             
-            # Saut de page + titre catégorie
-            self.doc.add_page_break()
+            # Construire le texte avec les données
+            nom = data.get("nom_entreprise", "")
+            tel = data.get("telephone", "")
+            adresse = data.get("adresse", "")
+            email = data.get("email", "")
+            fax = data.get("fax", "")
+            chef = data.get("nom_chef_entreprise", "")
             
-            cat_p = self.doc.add_paragraph()
-            cat_r = cat_p.add_run(cat_name)
-            cat_r.bold = True
-            cat_r.font.size = Pt(14)
-            cat_r.font.color.rgb = RGBColor(37, 99, 235)  # Bleu
+            new_text = (
+                f"Nom de l'entreprise : {nom if nom else '…' * 40}\n"
+                f"Tél. : {tel if tel else '…' * 20}\n"
+                f"Adresse : {adresse if adresse else '…' * 50}\n"
+                f"E-mail : {email if email else '…' * 30}\n"
+                f"Fax : {fax if fax else '…' * 30}\n"
+                f"Nom du Chef d'entreprise : {chef if chef else '…' * 40}"
+            )
             
-            # Ajouter TOUTES les images de cette catégorie
-            for img in imgs:
-                img_path = img.get("stored_path")
+            cell.text = new_text
+    
+    def _fill_operation_table(self, table, data: Dict):
+        """Remplit le tableau description de l'opération (TABLE 1)."""
+        if len(table.rows) >= 4:
+            # Ligne 0 : Description et Lot
+            if len(table.rows[0].cells) >= 3:
+                desc = data.get("description_operation", "")
+                lot = data.get("lot", "")
+                table.rows[0].cells[1].text = desc if desc else ""
+                table.rows[0].cells[2].text = f"Lot : {lot if lot else ''}"
+            
+            # Ligne 1 : Travaux confiés
+            if len(table.rows[1].cells) >= 2:
+                travaux = data.get("travaux_confies", "")
+                table.rows[1].cells[1].text = travaux if travaux else ""
+            
+            # Ligne 2 : Planning
+            if len(table.rows[2].cells) >= 2:
+                debut = data.get("date_debut", "")
+                fin = data.get("date_fin", "")
+                table.rows[2].cells[1].text = f"Date de début : {debut}\tDate de fin : {fin}"
+            
+            # Ligne 3 : Effectifs
+            if len(table.rows[3].cells) >= 2:
+                moyen = data.get("effectif_moyen", "")
+                pointe = data.get("effectif_pointe", "")
+                table.rows[3].cells[1].text = f"Effectif moyen : {moyen}\tEffectif de pointe : {pointe}"
+    
+    def _fill_hygiene_table(self, table, data: Dict):
+        """Remplit le tableau mesures d'hygiène (TABLE 2)."""
+        # Vestiaires (lignes 0-2)
+        if len(table.rows) > 2:
+            vest = data.get("vestiaires", {})
+            if len(table.rows[1].cells) >= 2:
+                table.rows[1].cells[1].text = vest.get("description", "")
+            if len(table.rows[2].cells) >= 3:
+                table.rows[2].cells[1].text = vest.get("emplacement", "")
+                table.rows[2].cells[2].text = f"Date de mise en service : {vest.get('date_service', '')}"
+        
+        # Sanitaires (lignes 3-5)
+        if len(table.rows) > 5:
+            sani = data.get("sanitaires", {})
+            if len(table.rows[4].cells) >= 2:
+                table.rows[4].cells[1].text = sani.get("description", "")
+            if len(table.rows[5].cells) >= 3:
+                table.rows[5].cells[1].text = sani.get("emplacement", "")
+                table.rows[5].cells[2].text = f"Date de mise en service : {sani.get('date_service', '')}"
+        
+        # Restauration (lignes 6-8)
+        if len(table.rows) > 8:
+            resto = data.get("restauration", {})
+            if len(table.rows[7].cells) >= 2:
+                table.rows[7].cells[1].text = resto.get("description", "")
+            if len(table.rows[8].cells) >= 3:
+                table.rows[8].cells[1].text = resto.get("emplacement", "")
+                table.rows[8].cells[2].text = f"Date de mise en service : {resto.get('date_service', '')}"
+    
+    def _fill_risques_travaux_table(self, table, risques: List[Dict]):
+        """Remplit le tableau d'analyse des risques travaux (TABLE 3)."""
+        if not risques or len(table.rows) < 3:
+            return
+        
+        # Supprimer les lignes existantes après l'en-tête (garder lignes 0-1)
+        while len(table.rows) > 2:
+            table._element.remove(table.rows[-1]._element)
+        
+        # Ajouter une ligne par phase/risque
+        for risque in risques:
+            row = table.add_row()
+            cells = row.cells
+            
+            if len(cells) >= 5:
+                cells[0].text = risque.get("phase", "")
+                cells[1].text = risque.get("moyens", "")
+                cells[2].text = risque.get("risques_entreprise", "")
+                cells[3].text = risque.get("risques_autres", "")
+                cells[4].text = risque.get("prevention", "")
                 
-                if img_path and os.path.exists(img_path):
-                    try:
-                        # Image centrée
-                        img_p = self.doc.add_paragraph()
-                        run = img_p.add_run()
-                        run.add_picture(img_path, width=Inches(6.5))
-                        img_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                        
-                        # Légende
-                        cap_p = self.doc.add_paragraph()
-                        cap_r = cap_p.add_run(f"Figure : {img.get('file', '')}")
-                        cap_r.font.size = Pt(9)
-                        cap_r.font.italic = True
-                        cap_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                        
-                        # Espace
-                        self.doc.add_paragraph()
-                        
-                        logger.info(f"[TEMPLATE] ✅ Image ajoutée : {img.get('file')}")
-                    
-                    except Exception as e:
-                        logger.warning(f"[TEMPLATE] ⚠️  Erreur image {img_path}: {e}")
+                # Ajouter une bordure pointillée pour séparer les risques
+                self._add_dotted_border(row)
+    
+    def _fill_risques_env_table(self, table, risques: List[Dict]):
+        """Remplit le tableau risques liés à l'environnement (TABLE 4)."""
+        if not risques or len(table.rows) < 2:
+            return
         
-        logger.info("[TEMPLATE] ✅ Annexes créées")
-
-
-# ==============================================================================
-# FIN DE LA CLASSE TemplateFiller
-# ==============================================================================
-#
-# INSTRUCTIONS D'INTÉGRATION :
-# 1. Ouvrir main.py
-# 2. Chercher "class TemplateFiller"
-# 3. Supprimer TOUTE la classe existante (jusqu'au bout)
-# 4. Copier/coller CETTE classe à la place
-# 5. Sauvegarder
-#
-# RÉSULTAT ATTENDU :
-# ✅ 7 tableaux présents (CHANTIER et SOUS-TRAITANTS conservés)
-# ✅ Placeholders remplacés correctement
-# ✅ Sous-traitants détectés et remplis automatiquement
-# ✅ Tableaux de risques complets
-# ✅ Annexes avec pages séparées par catégorie
-# ==============================================================================
+        # Les 3 catégories fixes sont déjà dans le template (lignes 2-4)
+        # On remplit juste les cellules correspondantes
+        for i, risque in enumerate(risques[:3]):  # Max 3 catégories
+            row_idx = 2 + i
+            if row_idx < len(table.rows):
+                row = table.rows[row_idx]
+                if len(row.cells) >= 5:
+                    # La première cellule contient déjà la catégorie
+                    row.cells[1].text = risque.get("contraintes_environnement", "")
+                    row.cells[2].text = risque.get("risques_autres_intervenants", "")
+                    row.cells[3].text = risque.get("prevention", "")
+                    row.cells[4].text = risque.get("observations", "")
+    
+    def _fill_text_sections(self, fill_data: Dict):
+        """Remplit les sections textuelles (organismes, secours)."""
+        orga = fill_data.get("organismes_prevention", {})
+        secours = fill_data.get("secours_evacuation", {})
+        
+        # Parcourir les paragraphes et remplir aux bons endroits
+        organismes_idx = None
+        secours_idx = None
+        
+        for i, para in enumerate(self.doc.paragraphs):
+            text = para.text.strip().upper()
+            if "ORGANISMES DE PREVENTION" in text:
+                organismes_idx = i
+            elif "SECOURS ET EVACUATION" in text and organismes_idx is not None:
+                secours_idx = i
+            elif "MESURES" in text or "HYGIENE" in text:
+                break  # On s'arrête après avoir trouvé les sections
+        
+        # Remplir ORGANISMES DE PREVENTION (paragraphes juste après le titre)
+        if organismes_idx is not None and orga:
+            insert_idx = organismes_idx + 1
+            content = []
+            
+            med = orga.get("medecine_travail", {})
+            if med.get("nom") or med.get("telephone"):
+                content.append(f"Médecine du travail : {med.get('nom', '')} - Tél : {med.get('telephone', '')}")
+            
+            insp = orga.get("inspecteur_travail", {})
+            if insp.get("nom") or insp.get("telephone"):
+                content.append(f"Inspection du travail : {insp.get('nom', '')} - Tél : {insp.get('telephone', '')}")
+            
+            csps = orga.get("csps", {})
+            if csps.get("nom") or csps.get("telephone"):
+                content.append(f"CSPS : {csps.get('nom', '')} - Tél : {csps.get('telephone', '')}")
+            
+            carsat = orga.get("carsat", {})
+            if carsat.get("nom") or carsat.get("telephone"):
+                content.append(f"CARSAT : {carsat.get('nom', '')} - Tél : {carsat.get('telephone', '')}")
+            
+            if content:
+                # Remplir ou créer le paragraphe
+                if insert_idx < len(self.doc.paragraphs):
+                    self.doc.paragraphs[insert_idx].text = "\n".join(content)
+                else:
+                    p = self.doc.add_paragraph("\n".join(content))
+        
+        # Remplir SECOURS ET EVACUATION (paragraphe juste après le titre)
+        if secours_idx is not None and secours:
+            insert_idx = secours_idx + 1
+            content = []
+            
+            if secours.get("pompiers"):
+                content.append(f"Pompiers : {secours.get('pompiers')}")
+            if secours.get("samu"):
+                content.append(f"SAMU : {secours.get('samu')}")
+            if secours.get("police"):
+                content.append(f"Police : {secours.get('police')}")
+            if secours.get("centre_antipoison"):
+                content.append(f"Centre antipoison : {secours.get('centre_antipoison')}")
+            
+            sst_list = secours.get("sst_chantier", [])
+            if sst_list:
+                content.append("\nSauveteurs Secouristes du Travail (SST) :")
+                for sst in sst_list:
+                    if isinstance(sst, dict):
+                        content.append(f"  - {sst.get('nom', '')} : {sst.get('telephone', '')}")
+            
+            if secours.get("point_rassemblement"):
+                content.append(f"\nPoint de rassemblement : {secours.get('point_rassemblement')}")
+            
+            if secours.get("consignes_specifiques"):
+                content.append(f"\nConsignes spécifiques :\n{secours.get('consignes_specifiques')}")
+            
+            if content:
+                # Remplir ou créer le paragraphe
+                if insert_idx < len(self.doc.paragraphs):
+                    self.doc.paragraphs[insert_idx].text = "\n".join(content)
+                else:
+                    p = self.doc.add_paragraph("\n".join(content))
+    
+    def _add_annexes(self, annexes: List[Dict], img_catalog: List[Dict]):
+        """Ajoute les annexes à la fin du document."""
+        
+        # Trouver la section ANNEXES
+        annexes_found = False
+        for para in self.doc.paragraphs:
+            if "ANNEXES" in para.text and any(run.bold for run in para.runs):
+                annexes_found = True
+                break
+        
+        if not annexes_found:
+            # Ajouter le titre ANNEXES
+            self.doc.add_page_break()
+            p = self.doc.add_paragraph()
+            run = p.add_run("ANNEXES")
+            run.bold = True
+            run.font.size = Pt(14)
+        
+        # Ajouter chaque annexe
+        for annexe in annexes:
+            titre = annexe.get("titre", "")
+            images = annexe.get("images", [])
+            description = annexe.get("description", "")
+            
+            if titre:
+                p = self.doc.add_paragraph()
+                run = p.add_run(f"\n{titre}")
+                run.bold = True
+                run.font.size = Pt(12)
+            
+            if description:
+                self.doc.add_paragraph(description)
+            
+            # Ajouter les images
+            for img_name in images:
+                # Trouver le chemin complet de l'image
+                img_path = None
+                for img in img_catalog:
+                    if img.get("file") == img_name:
+                        img_path = img.get("stored_path")
+                        break
+                
+                if img_path:
+                    try:
+                        from docx.shared import Inches
+                        self.doc.add_picture(img_path, width=Inches(6))
+                        # Légende
+                        p = self.doc.add_paragraph(f"Figure : {img_name}")
+                        p.alignment = 1  # Centré
+                    except Exception:
+                        # Si erreur, ajouter juste une mention
+                        self.doc.add_paragraph(f"[Image : {img_name}]")
+    
+    def _add_dotted_border(self, row):
+        """Ajoute une bordure pointillée en bas d'une ligne de tableau."""
+        tcPr = row.cells[0]._element.get_or_add_tcPr()
+        tcBorders = OxmlElement('w:tcBorders')
+        bottom = OxmlElement('w:bottom')
+        bottom.set(qn('w:val'), 'dotted')
+        bottom.set(qn('w:sz'), '8')
+        bottom.set(qn('w:space'), '0')
+        bottom.set(qn('w:color'), '808080')
+        tcBorders.append(bottom)
+        tcPr.append(tcBorders)
 
 
 # ===== App =====
@@ -2795,7 +2729,25 @@ def generate_ppsps_freeform(project_id: int, session: Session = Depends(get_sess
     
     # Utiliser le TemplateFiller pour remplir le template
     try:
-        filler = TemplateFiller(TEMPLATE_PATH, form_data=meta_hint)
+        # Préparer les données du formulaire pour les placeholders
+        form_data = {
+            "name": proj.name or "",
+            "address": proj.address or "",
+            "project_reference": getattr(proj, 'project_reference', "") or "",
+            "site_phone": getattr(proj, 'site_phone', "") or "",
+            "duration_weeks": proj.duration_weeks or 0,
+            "workforce": proj.workforce or 0,
+            "works_csv": proj.works_csv or "",
+            "company_name": getattr(proj, 'company_name', "") or "",
+            "company_address": getattr(proj, 'company_address', "") or "",
+            "company_phone": getattr(proj, 'company_phone', "") or "",
+            "company_email": getattr(proj, 'company_email', "") or "",
+            "site_manager_name": getattr(proj, 'site_manager_name', "") or "",
+            "owner_name": getattr(proj, 'owner_name', "") or "",
+            "architect_name": getattr(proj, 'architect_name', "") or "",
+        }
+        
+        filler = TemplateFiller(TEMPLATE_PATH, form_data=form_data)
         filled_doc = filler.fill_with_ai(
             project_data=meta_hint,
             evidence_pack=evidence,
@@ -3325,11 +3277,22 @@ async def ui_generate_doc(
     # 3) dispatcher par type
     k = kind.lower()
     if k in ("ppsps", "ppsps_freeform", "ppsps_docx"):
-        res = generate_ppsps_freeform(proj.id, session, user)
-        doc_id = res.get("document_id")
-        if not doc_id:
-            raise HTTPException(status_code=500, detail="Génération PPSPS échouée")
-        return export_docx_by_id(doc_id, session=session, user=user)
+        try:
+            res = generate_ppsps_freeform(proj.id, session, user)
+            doc_id = res.get("document_id")
+            if not doc_id:
+                raise HTTPException(status_code=500, detail="Génération PPSPS échouée")
+            return export_docx_by_id(doc_id, session=session, user=user)
+        except HTTPException as e:
+            # Si c'est une erreur 402 (jetons insuffisants), renvoyer du JSON
+            if e.status_code == 402:
+                from fastapi.responses import JSONResponse
+                return JSONResponse(
+                    status_code=402,
+                    content=e.detail
+                )
+            # Sinon, laisser l'exception se propager
+            raise
 
     raise HTTPException(status_code=400, detail="Type de doc inconnu (attendu: ppsps)")
 
