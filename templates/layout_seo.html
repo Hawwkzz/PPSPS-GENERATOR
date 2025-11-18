@@ -25,7 +25,7 @@
     <meta property="og:url" content="{{ meta.og_url if meta else request.url }}">
     <meta property="og:title" content="{{ meta.og_title if meta else 'PPSPS Generator – Génération Automatique de PPSPS par IA' }}">
     <meta property="og:description" content="{{ meta.og_description if meta else 'Générez automatiquement votre PPSPS avec notre IA spécialisée BTP. Jusqu\'à 90% du contenu en quelques minutes.' }}">
-    <meta property="og:image" content="{{ meta.og_image if meta else url_for('static', filename='og-image.jpg', _external=True) }}">
+    <meta property="og:image" content="{{ meta.og_image if meta else '/static/og-image.jpg' }}">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:site_name" content="PPSPS Generator">
@@ -36,15 +36,15 @@
     <meta name="twitter:url" content="{{ meta.og_url if meta else request.url }}">
     <meta name="twitter:title" content="{{ meta.twitter_title if meta else 'PPSPS Generator – Génération Automatique par IA' }}">
     <meta name="twitter:description" content="{{ meta.twitter_description if meta else 'Générez votre PPSPS automatiquement avec notre IA BTP' }}">
-    <meta name="twitter:image" content="{{ meta.twitter_image if meta else url_for('static', filename='og-image.jpg', _external=True) }}">
+    <meta name="twitter:image" content="{{ meta.twitter_image if meta else '/static/og-image.jpg' }}">
     {% if meta and meta.twitter_site %}
     <meta name="twitter:site" content="{{ meta.twitter_site }}">
     {% endif %}
 
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
-    <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
-    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="icon" type="image/png" href="/static/favicon.png">
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+    <link rel="shortcut icon" href="/static/favicon.ico">
 
     <!-- Structured Data JSON-LD optimisé pour le SEO -->
     <script type="application/ld+json">
@@ -74,7 +74,7 @@
           "url": "{{ request.url_root }}",
           "logo": {
             "@type": "ImageObject",
-            "url": "{{ url_for('static', filename='logo.png', _external=True) }}",
+            "url": "/static/logo.png",
             "width": 600,
             "height": 60
           },
