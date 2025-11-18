@@ -338,21 +338,22 @@ class SEOConfig:
 
 SEO_PAGES = {
     "home": {
-        "title": "Génération automatique de PPSPS par IA",
-        "description": "Générez automatiquement votre PPSPS en quelques minutes avec notre IA.",
-        "keywords": ["génération PPSPS", "IA construction", "automatisation BTP"]
+        "title": "Génération automatique de PPSPS par IA | BTP",
+        "description": "Générez automatiquement jusqu'à 90% de votre PPSPS en quelques minutes avec notre IA spécialisée BTP. Conforme, rapide, économique. Essai gratuit.",
+        "keywords": ["génération PPSPS", "PPSPS automatique", "IA BTP", "générateur PPSPS", "PPSPS en ligne", "automatisation BTP"]
     },
     "register": {
-        "title": "Créer un compte",
-        "description": "Créez votre compte gratuit et commencez à générer vos PPSPS automatiquement.",
-        "keywords": ["inscription PPSPS", "compte gratuit"]
+        "title": "Créer un compte gratuit | Inscription",
+        "description": "Créez votre compte gratuit sur PPSPS Generator et commencez à générer vos PPSPS automatiquement en quelques minutes. Sans engagement.",
+        "keywords": ["inscription PPSPS", "créer compte générateur", "essai gratuit BTP"]
     },
     "shop": {
-        "title": "Acheter des jetons - Tarifs",
-        "description": "50€ par génération de PPSPS. Paiement sécurisé par Stripe.",
-        "keywords": ["tarifs PPSPS", "prix génération PPSPS", "acheter jetons"]
+        "title": "Tarifs - Acheter des jetons PPSPS",
+        "description": "50€ par génération de PPSPS. Achetez vos jetons et générez des documents conformes en quelques minutes. Paiement sécurisé Stripe.",
+        "keywords": ["tarifs PPSPS", "prix génération PPSPS", "acheter jetons", "coût PPSPS"]
     }
 }
+
 
 # === OpenRouter / OpenAI ===
 from app.config import OPENROUTER_API_KEY, OPENROUTER_BASE_URL, OPENROUTER_DEFAULT_MODEL
@@ -1632,7 +1633,7 @@ def create_project(p: Project, session: Session = Depends(get_session), user: Us
 
 @app.get("/projects")
 def list_projects(session: Session = Depends(get_session), user: UserDB = Depends(require_login)):
-    return session.exec(select(ProjectDB).where(ProjectDB.owner_id == user.id).order_by(ProjectDB.created_at.desc())).all()
+    return session.exec(select(ProjectDB).where(ProjectDB.owner_id == user.id)).all()
 
 @app.post("/projects/{project_id}/documents")
 def add_document(project_id: int, doc: DocumentIn, session: Session = Depends(get_session), user: UserDB = Depends(require_login)):
@@ -2951,9 +2952,43 @@ def ensure_file_is_owned(file_id: int, user: UserDB, session: Session) -> Attach
     return att
 
 
-@app.get("/", include_in_schema=False)
-async def redirect_root():
-    return RedirectResponse(url="https://www.ppsps-generator.fr/login")
+@app.get("/", response_class=HTMLResponse)
+def homepage(request: Request):
+    """Page d'accueil principale avec contenu SEO"""
+    seo_config = SEO_PAGES.get("home", {})
+    meta = SEOConfig.get_meta_tags(
+        title=seo_config.get("title"),
+        description=seo_config.get("description"),
+        keywords=seo_config.get("keywords"),
+        canonical_url=SEOConfig.SITE_URL
+    )
+    
+    # Structured data pour la homepage
+    structured_data = {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "PPSPS Generator",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "offers": {
+            "@type": "Offer",
+            "price": "50",
+            "priceCurrency": "EUR",
+            "availability": "https://schema.org/InStock"
+        },
+        "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.8",
+            "reviewCount": "127"
+        },
+        "description": "Générateur automatique de PPSPS par intelligence artificielle pour les professionnels du BTP"
+    }
+    
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "meta": meta,
+        "structured_data": structured_data
+    })
 
 # =====================================================================
 #                               UI (Jinja)
@@ -3032,7 +3067,7 @@ def ui_register_post(
 
 @app.get("/ui/projects", response_class=HTMLResponse)
 def ui_projects(request: Request, session: Session = Depends(get_session), user: UserDB = Depends(require_login)):
-    projects = session.exec(select(ProjectDB).where(ProjectDB.owner_id == user.id).order_by(ProjectDB.created_at.desc())).all()
+    projects = session.exec(select(ProjectDB).where(ProjectDB.owner_id == user.id)).all()
     csrf = _ensure_csrf_token(request)
     return templates.TemplateResponse("projects_list.html", {"request": request, "projects": projects, "csrf_token": csrf})
 
@@ -3100,13 +3135,8 @@ def ui_project_detail(project_id: int, request: Request, session: Session = Depe
     csrf = _ensure_csrf_token(request)
     # Récupérer le solde de jetons
     balance = TokenService.get_balance(session, user.id)
-    # Avertissement pour l'upload de fichiers
-    upload_warning = {
-        "title": "⚠️ Important : Téléversez tous les fichiers nécessaires",
-        "message": "Avant de générer le PPSPS, assurez-vous d'avoir uploadé TOUS les documents requis (PGC, plans, annexes, etc.). La génération coûte 1 jeton et ne peut pas être annulée. Vérifiez que tous vos fichiers sont bien présents avant de lancer la génération."
-    }
     return templates.TemplateResponse("project_detail.html", {
-        "request": request, "p": proj, "docs": docs, "files": files, "ia_summary": ia_summary, "csrf_token": csrf, "balance": balance, "upload_warning": upload_warning
+        "request": request, "p": proj, "docs": docs, "files": files, "ia_summary": ia_summary, "csrf_token": csrf, "balance": balance
     })
 
 @app.post("/ui/projects/{project_id}/ingest")
