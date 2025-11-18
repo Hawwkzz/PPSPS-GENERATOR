@@ -2955,40 +2955,47 @@ def ensure_file_is_owned(file_id: int, user: UserDB, session: Session) -> Attach
 @app.get("/", response_class=HTMLResponse)
 def homepage(request: Request):
     """Page d'accueil principale avec contenu SEO"""
-    seo_config = SEO_PAGES.get("home", {})
-    meta = SEOConfig.get_meta_tags(
-        title=seo_config.get("title"),
-        description=seo_config.get("description"),
-        keywords=seo_config.get("keywords"),
-        canonical_url=SEOConfig.SITE_URL
-    )
-    
-    # Structured data pour la homepage
-    structured_data = {
-        "@context": "https://schema.org",
-        "@type": "SoftwareApplication",
-        "name": "PPSPS Generator",
-        "applicationCategory": "BusinessApplication",
-        "operatingSystem": "Web",
-        "offers": {
-            "@type": "Offer",
-            "price": "50",
-            "priceCurrency": "EUR",
-            "availability": "https://schema.org/InStock"
-        },
-        "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": "4.8",
-            "reviewCount": "127"
-        },
-        "description": "Générateur automatique de PPSPS par intelligence artificielle pour les professionnels du BTP"
-    }
-    
-    return templates.TemplateResponse("index.html", {
-        "request": request,
-        "meta": meta,
-        "structured_data": structured_data
-    })
+    try:
+        seo_config = SEO_PAGES.get("home", {})
+        meta = SEOConfig.get_meta_tags(
+            title=seo_config.get("title"),
+            description=seo_config.get("description"),
+            keywords=seo_config.get("keywords"),
+            canonical_url=SEOConfig.SITE_URL
+        )
+        
+        # Structured data pour la homepage
+        structured_data = {
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            "name": "PPSPS Generator",
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "Web",
+            "offers": {
+                "@type": "Offer",
+                "price": "50",
+                "priceCurrency": "EUR",
+                "availability": "https://schema.org/InStock"
+            },
+            "aggregateRating": {
+                "@type": "AggregateRating",
+                "ratingValue": "4.8",
+                "reviewCount": "127"
+            },
+            "description": "Générateur automatique de PPSPS par intelligence artificielle pour les professionnels du BTP"
+        }
+        
+        return templates.TemplateResponse("index.html", {
+            "request": request,
+            "meta": meta,
+            "structured_data": structured_data
+        })
+    except Exception as e:
+        import traceback
+        print(f"ERREUR HOMEPAGE: {e}")
+        print(traceback.format_exc())
+        # En cas d'erreur, rediriger vers login
+        return RedirectResponse(url="/login")
 
 # =====================================================================
 #                               UI (Jinja)
