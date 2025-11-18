@@ -46,6 +46,7 @@ FORM_PLACEHOLDERS = {
 from fastapi import FastAPI, Body, Request, Form, Depends, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse, FileResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.datastructures import FormData
@@ -1013,6 +1014,9 @@ app.add_middleware(
 
 
 templates = Jinja2Templates(directory="templates")
+
+# Mount static files (pour images, CSS, JS, etc.)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 import secrets
 
