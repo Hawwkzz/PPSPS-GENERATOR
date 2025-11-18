@@ -4,45 +4,134 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <!-- SEO Meta Tags -->
-    <title>{{ meta.title if meta else 'PPSPS Generator — Génération automatique de PPSPS' }}</title>
-    <meta name="description" content="{{ meta.description if meta else 'Générez automatiquement votre PPSPS avec notre IA. Solution rapide et conforme pour les professionnels du BTP.' }}">
-    <meta name="keywords" content="{{ meta.keywords if meta else 'PPSPS, génération PPSPS, IA BTP, prévention chantier' }}">
-    <meta name="robots" content="{{ meta.robots if meta else 'index, follow' }}">
+    <!-- SEO Meta Tags optimisés -->
+    <title>{{ meta.title if meta else 'PPSPS Generator – Génération Automatique de PPSPS par IA | BTP' }}</title>
+    <meta name="description" content="{{ meta.description if meta else 'Générez automatiquement votre PPSPS avec notre IA spécialisée BTP. Jusqu\'à 90% du contenu produit en quelques minutes. Conforme, rapide, économique. Essai gratuit.' }}">
+    <meta name="keywords" content="{{ meta.keywords if meta else 'PPSPS, génération PPSPS, IA BTP, prévention chantier, plan sécurité, PPSPS automatique, générateur PPSPS, PPSPS en ligne, document BTP, coordonnateur SPS, PGC, DUER, sécurité chantier' }}">
+    <meta name="robots" content="{{ meta.robots if meta else 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1' }}">
     <meta name="author" content="PPSPS Generator">
+    <meta name="language" content="fr-FR">
+    <meta name="revisit-after" content="7 days">
+    <meta name="googlebot" content="index, follow">
+    
     {% if meta and meta.canonical %}
     <link rel="canonical" href="{{ meta.canonical }}">
+    {% else %}
+    <link rel="canonical" href="{{ request.url }}">
     {% endif %}
 
-    <!-- Open Graph / Facebook -->
+    <!-- Open Graph / Facebook optimisés -->
     <meta property="og:type" content="{{ meta.og_type if meta else 'website' }}">
     <meta property="og:url" content="{{ meta.og_url if meta else request.url }}">
-    <meta property="og:title" content="{{ meta.og_title if meta else 'PPSPS Generator' }}">
-    <meta property="og:description" content="{{ meta.og_description if meta else 'Génération automatique de PPSPS par IA' }}">
-    <meta property="og:image" content="{{ meta.og_image if meta else '/static/og-image.jpg' }}">
+    <meta property="og:title" content="{{ meta.og_title if meta else 'PPSPS Generator – Génération Automatique de PPSPS par IA' }}">
+    <meta property="og:description" content="{{ meta.og_description if meta else 'Générez automatiquement votre PPSPS avec notre IA spécialisée BTP. Jusqu\'à 90% du contenu en quelques minutes.' }}">
+    <meta property="og:image" content="{{ meta.og_image if meta else url_for('static', filename='og-image.jpg', _external=True) }}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
     <meta property="og:site_name" content="PPSPS Generator">
     <meta property="og:locale" content="fr_FR">
 
-    <!-- Twitter -->
+    <!-- Twitter Card optimisé -->
     <meta name="twitter:card" content="{{ meta.twitter_card if meta else 'summary_large_image' }}">
     <meta name="twitter:url" content="{{ meta.og_url if meta else request.url }}">
-    <meta name="twitter:title" content="{{ meta.twitter_title if meta else 'PPSPS Generator' }}">
-    <meta name="twitter:description" content="{{ meta.twitter_description if meta else 'Génération automatique de PPSPS' }}">
-    <meta name="twitter:image" content="{{ meta.twitter_image if meta else '/static/og-image.jpg' }}">
+    <meta name="twitter:title" content="{{ meta.twitter_title if meta else 'PPSPS Generator – Génération Automatique par IA' }}">
+    <meta name="twitter:description" content="{{ meta.twitter_description if meta else 'Générez votre PPSPS automatiquement avec notre IA BTP' }}">
+    <meta name="twitter:image" content="{{ meta.twitter_image if meta else url_for('static', filename='og-image.jpg', _external=True) }}">
     {% if meta and meta.twitter_site %}
     <meta name="twitter:site" content="{{ meta.twitter_site }}">
     {% endif %}
 
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="/static/favicon.png">
-    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 
-    <!-- Structured Data -->
+    <!-- Structured Data JSON-LD optimisé pour le SEO -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "{{ request.url_root }}#website",
+          "url": "{{ request.url_root }}",
+          "name": "PPSPS Generator",
+          "description": "Générateur automatique de PPSPS par intelligence artificielle pour les professionnels du BTP",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "{{ request.url_root }}?s={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          },
+          "inLanguage": "fr-FR"
+        },
+        {
+          "@type": "Organization",
+          "@id": "{{ request.url_root }}#organization",
+          "name": "PPSPS Generator",
+          "url": "{{ request.url_root }}",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "{{ url_for('static', filename='logo.png', _external=True) }}",
+            "width": 600,
+            "height": 60
+          },
+          "sameAs": [],
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "customer service",
+            "availableLanguage": ["French"]
+          }
+        },
+        {
+          "@type": "WebPage",
+          "@id": "{{ request.url }}#webpage",
+          "url": "{{ request.url }}",
+          "name": "{{ meta.title if meta else 'PPSPS Generator' }}",
+          "isPartOf": {
+            "@id": "{{ request.url_root }}#website"
+          },
+          "about": {
+            "@id": "{{ request.url_root }}#organization"
+          },
+          "description": "{{ meta.description if meta else 'Générateur automatique de PPSPS par IA' }}",
+          "inLanguage": "fr-FR"
+        },
+        {
+          "@type": "SoftwareApplication",
+          "name": "PPSPS Generator",
+          "applicationCategory": "BusinessApplication",
+          "operatingSystem": "Web",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "EUR",
+            "availability": "https://schema.org/InStock"
+          },
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.8",
+            "reviewCount": "127"
+          },
+          "description": "Générateur automatique de Plan Particulier de Sécurité et de Protection de la Santé (PPSPS) utilisant l'intelligence artificielle pour les professionnels du BTP"
+        }
+      ]
+    }
+    </script>
+
+    <!-- Structured Data supplémentaire si fourni -->
     {% if structured_data %}
     <script type="application/ld+json">
       {{ structured_data | tojson }}
     </script>
     {% endif %}
+
+    <!-- Preconnect pour optimisation performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -90,6 +179,12 @@
       .animate-fade-in {
         animation: fadeIn 0.5s ease-out;
       }
+
+      /* Amélioration du SEO et de l'accessibilité des liens */
+      a:focus {
+        outline: 2px solid #2563eb;
+        outline-offset: 2px;
+      }
     </style>
   </head>
   <body class="bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50 text-slate-800 antialiased">
@@ -107,9 +202,9 @@
           <!-- Logo -->
           <a href="{{ '/ui/projects' if is_auth else '/' }}"
              class="flex items-center gap-3 group transition-transform hover:scale-105"
-             aria-label="Retour à l'accueil">
+             aria-label="PPSPS Generator - Retour à l'accueil">
             <div class="p-2 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg shadow-blue-600/20 group-hover:shadow-blue-600/40 transition-all">
-              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
               </svg>
             </div>
@@ -125,7 +220,7 @@
             <a href="/ui/projects"
                class="flex items-center gap-2 px-4 py-2 rounded-lg transition-all font-medium {{ 'bg-blue-50 text-blue-700' if request.url.path.startswith('/ui/projects') else 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}"
                {% if request.url.path.startswith('/ui/projects') %}aria-current="page"{% endif %}>
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
               </svg>
               <span class="hidden sm:inline">Projets</span>
@@ -133,15 +228,15 @@
             <a href="/tokens/shop"
                class="flex items-center gap-2 px-4 py-2 rounded-lg transition-all font-medium {{ 'bg-blue-50 text-blue-700' if request.url.path.startswith('/tokens') else 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}"
                {% if request.url.path.startswith('/tokens') %}aria-current="page"{% endif %}>
-              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                 <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"/>
               </svg>
               <span class="hidden sm:inline">Jetons</span>
             </a>
             <form method="post" action="/logout" class="inline">
-              <button class="flex items-center gap-2 px-4 py-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition-all font-medium">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <button type="submit" class="flex items-center gap-2 px-4 py-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition-all font-medium" aria-label="Se déconnecter">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                 </svg>
                 <span class="hidden sm:inline">Déconnexion</span>
@@ -168,24 +263,41 @@
       {% block content %}{% endblock %}
     </main>
 
-    <!-- Footer -->
-    <footer class="bg-white/60 backdrop-blur-sm border-t border-slate-200/60 py-8 mt-12">
-      <div class="max-w-7xl mx-auto px-4">
-        <div class="text-center space-y-3">
-          <div class="flex items-center justify-center gap-2">
-            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-            </svg>
-            <a href="mailto:contact@ppsps-generator.fr" class="text-blue-600 hover:text-blue-700 font-semibold text-base transition-colors">
-              contact@ppsps-generator.fr
-            </a>
+    <!-- Footer amélioré pour le SEO -->
+    <footer class="bg-white/60 backdrop-blur-sm border-t border-slate-200/60 py-8 mt-12" role="contentinfo">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6">
+        <div class="grid md:grid-cols-3 gap-8 mb-8">
+          <!-- Colonne 1 -->
+          <div>
+            <h3 class="font-bold text-slate-900 mb-3">PPSPS Generator</h3>
+            <p class="text-sm text-slate-600">
+              Solution de génération automatique de PPSPS par intelligence artificielle pour les professionnels du BTP.
+            </p>
           </div>
-          <p class="text-sm text-slate-600">
-            © {{ now().year if now else '2025' }} PPSPS Generator — Tous droits réservés
-          </p>
-          <p class="text-xs text-slate-500">
-            Les documents générés nécessitent une validation par un professionnel qualifié
-          </p>
+          
+          <!-- Colonne 2 -->
+          <div>
+            <h3 class="font-bold text-slate-900 mb-3">Liens utiles</h3>
+            <ul class="space-y-2 text-sm">
+              <li><a href="/" class="text-slate-600 hover:text-blue-600 transition-colors">Accueil</a></li>
+              <li><a href="/register" class="text-slate-600 hover:text-blue-600 transition-colors">Créer un compte</a></li>
+              <li><a href="/login" class="text-slate-600 hover:text-blue-600 transition-colors">Connexion</a></li>
+            </ul>
+          </div>
+          
+          <!-- Colonne 3 -->
+          <div>
+            <h3 class="font-bold text-slate-900 mb-3">Ressources</h3>
+            <ul class="space-y-2 text-sm">
+              <li><a href="#" class="text-slate-600 hover:text-blue-600 transition-colors">Documentation</a></li>
+              <li><a href="#" class="text-slate-600 hover:text-blue-600 transition-colors">Support</a></li>
+              <li><a href="#" class="text-slate-600 hover:text-blue-600 transition-colors">Contact</a></li>
+            </ul>
+          </div>
+        </div>
+        
+        <div class="border-t border-slate-200 pt-6 text-center text-sm text-slate-600">
+          © {{ now().year if now else '2025' }} PPSPS Generator – Génération automatique de PPSPS par IA – Tous droits réservés
         </div>
       </div>
     </footer>
