@@ -1015,8 +1015,10 @@ app.add_middleware(
 
 templates = Jinja2Templates(directory="templates")
 
-# Mount static files (pour images, CSS, JS, etc.)
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# Monter static seulement s'il existe
+import os
+if os.path.exists("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
 
 import secrets
 
