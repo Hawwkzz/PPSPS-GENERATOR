@@ -1015,10 +1015,8 @@ app.add_middleware(
 
 templates = Jinja2Templates(directory="templates")
 
-# Monter static seulement s'il existe
-import os
-if os.path.exists("static"):
-    app.mount("/static", StaticFiles(directory="static"), name="static")
+# Mount static files (pour images, CSS, JS, etc.)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 import secrets
 
@@ -1047,10 +1045,6 @@ def on_startup():
 # =====================================================================
 
 from fastapi.responses import RedirectResponse
-
-@app.get("/", response_class=RedirectResponse)
-def root():
-    return RedirectResponse(url="/login")
 
 pwd_ctx = CryptContext(
     schemes=["argon2"],
