@@ -2952,6 +2952,42 @@ def ensure_file_is_owned(file_id: int, user: UserDB, session: Session) -> Attach
     return att
 
 
+# =====================================================================
+#                           ROUTES SEO
+# =====================================================================
+@app.get("/sitemap.xml")
+def sitemap():
+    urls = [
+        {"loc": SEOConfig.SITE_URL, "priority": "1.0", "changefreq": "daily"},
+        {"loc": f"{SEOConfig.SITE_URL}/home", "priority": "1.0", "changefreq": "daily"},
+        {"loc": f"{SEOConfig.SITE_URL}/register", "priority": "0.8", "changefreq": "monthly"},
+        {"loc": f"{SEOConfig.SITE_URL}/tokens/shop", "priority": "0.9", "changefreq": "weekly"},
+    ]
+    
+    sitemap_xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    sitemap_xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    for url in urls:
+        sitemap_xml += f'  <url>\n'
+        sitemap_xml += f'    <loc>{url["loc"]}</loc>\n'
+        sitemap_xml += f'    <priority>{url["priority"]}</priority>\n'
+        sitemap_xml += f'    <changefreq>{url["changefreq"]}</changefreq>\n'
+        sitemap_xml += f'  </url>\n'
+    sitemap_xml += '</urlset>'
+    
+    from fastapi.responses import Response
+    return Response(content=sitemap_xml, media_type="application/xml")
+
+@app.get("/robots.txt")
+def robots_txt():
+    robots = f"""User-agent: *
+Allow: /
+Disallow: /ui/
+Disallow: /api/
+
+Sitemap: {SEOConfig.SITE_URL}/sitemap.xml
+"""
+    from fastapi.responses import Response
+    return Response(content=robots, media_type="text/plain")
 @app.get("/", include_in_schema=False)
 async def redirect_root(request: Request):
     # Si l'utilisateur est connecté, aller vers /ui/projects
@@ -3448,42 +3484,6 @@ async def stripe_webhook(request: Request, stripe_signature: str = Header(None, 
         raise HTTPException(status_code=400, detail=result['message'])
     return {"status": "success"}
 
-# =====================================================================
-#                           ROUTES SEO
-# =====================================================================
-@app.get("/sitemap.xml")
-def sitemap():
-    urls = [
-        {"loc": SEOConfig.SITE_URL, "priority": "1.0", "changefreq": "daily"},
-        {"loc": f"{SEOConfig.SITE_URL}/home", "priority": "1.0", "changefreq": "daily"},
-        {"loc": f"{SEOConfig.SITE_URL}/register", "priority": "0.8", "changefreq": "monthly"},
-        {"loc": f"{SEOConfig.SITE_URL}/tokens/shop", "priority": "0.9", "changefreq": "weekly"},
-    ]
-    
-    sitemap_xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
-    sitemap_xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-    for url in urls:
-        sitemap_xml += f'  <url>\n'
-        sitemap_xml += f'    <loc>{url["loc"]}</loc>\n'
-        sitemap_xml += f'    <priority>{url["priority"]}</priority>\n'
-        sitemap_xml += f'    <changefreq>{url["changefreq"]}</changefreq>\n'
-        sitemap_xml += f'  </url>\n'
-    sitemap_xml += '</urlset>'
-    
-    from fastapi.responses import Response
-    return Response(content=sitemap_xml, media_type="application/xml")
-
-@app.get("/robots.txt")
-def robots_txt():
-    robots = f"""User-agent: *
-Allow: /
-Disallow: /ui/
-Disallow: /api/
-
-Sitemap: {SEOConfig.SITE_URL}/sitemap.xml
-"""
-    from fastapi.responses import Response
-    return Response(content=robots, media_type="text/plain")
 
 # =====================================================================
 #                         KB UI ADMIN (sécurisée)
