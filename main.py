@@ -1,4 +1,4 @@
-# app/main.py — FREEFORM PPSPS (Markdown → DOCX), no placeholders
+# app/main.py â€” FREEFORM PPSPS (Markdown â†’ DOCX), no placeholders
 from __future__ import annotations
 
 # ===== Stdlib =====
@@ -62,13 +62,13 @@ from app.config import (
 )
 from app.db import init_db, get_session
 from app.models import ProjectDB, DocumentDB, AttachmentDB, UserDB
-# ===== Modèles Tokens =====
+# ===== ModÃ¨les Tokens =====
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 from app.models import Base
 
 class TokenPackage(Base):
-    """Package de jetons (1 jeton = 50€)"""
+    """Package de jetons (1 jeton = 50â‚¬)"""
     __tablename__ = "token_package"
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str]
@@ -115,7 +115,7 @@ class StripeWebhookEvent(Base):
 
     # ===== Services Tokens & Stripe =====
 class InsufficientTokensError(Exception):
-    """Levée quand pas assez de jetons"""
+    """LevÃ©e quand pas assez de jetons"""
     pass
 
 class TokenService:
@@ -158,7 +158,7 @@ class TokenService:
     
     @staticmethod
     def use_token(session: Session, user_id: int, project_id: int,
-                  document_id: Optional[int] = None, description: str = "Génération PPSPS"):
+                  document_id: Optional[int] = None, description: str = "GÃ©nÃ©ration PPSPS"):
         balance = TokenService.get_or_create_balance(session, user_id)
         if balance.balance < 1:
             raise InsufficientTokensError(
@@ -221,7 +221,7 @@ class StripeService:
                     'unit_amount': package.price_cents,
                     'product_data': {
                         'name': package.name,
-                        'description': f"{package.tokens} jeton pour générer un PPSPS",
+                        'description': f"{package.tokens} jeton pour gÃ©nÃ©rer un PPSPS",
                     },
                 },
                 'quantity': 1,
@@ -240,12 +240,12 @@ class StripeService:
         except Exception:
             return {'success': False, 'message': 'Signature invalide'}
         
-        # Vérifier si déjà traité
+        # VÃ©rifier si dÃ©jÃ  traitÃ©
         existing = session_db.exec(
             select(StripeWebhookEvent).where(StripeWebhookEvent.stripe_event_id == event['id'])
         ).first()
         if existing and existing.processed:
-            return {'success': True, 'message': 'Déjà traité'}
+            return {'success': True, 'message': 'DÃ©jÃ  traitÃ©'}
         
         # Logger
         log = StripeWebhookEvent(stripe_event_id=event['id'], event_type=event['type'], processed=False)
@@ -270,7 +270,7 @@ class StripeService:
             log.processed = True
             session_db.add(log)
             session_db.commit()
-            return {'success': True, 'message': f"Événement {event['type']} traité"}
+            return {'success': True, 'message': f"Ã‰vÃ©nement {event['type']} traitÃ©"}
         except Exception as e:
             log.error = str(e)
             session_db.add(log)
@@ -285,8 +285,8 @@ class StripeService:
     
     @staticmethod
     def create_default_packages(session_db: Session):
-        """Crée le package : 1 jeton = 50€"""
-        pkg_data = {'name': 'Génération PPSPS', 'tokens': 1, 'price_cents': 5000}
+        """CrÃ©e le package : 1 jeton = 50â‚¬"""
+        pkg_data = {'name': 'GÃ©nÃ©ration PPSPS', 'tokens': 1, 'price_cents': 5000}
         existing = session_db.exec(
             select(TokenPackage).where(TokenPackage.name == pkg_data['name'])
         ).first()
@@ -298,17 +298,17 @@ class StripeService:
             # ===== Configuration SEO =====
 class SEOConfig:
     SITE_NAME = "PPSPS GENERATOR"
-    SITE_DOMAIN = "ppsps-generator.fr"  # À MODIFIER avec ton domaine
+    SITE_DOMAIN = "ppsps-generator.fr"  # Ã€ MODIFIER avec ton domaine
     SITE_URL = f"https://{SITE_DOMAIN}"
     
-    DEFAULT_TITLE = "PPSPS Generator - Génération automatique de PPSPS par IA"
+    DEFAULT_TITLE = "PPSPS Generator - GÃ©nÃ©ration automatique de PPSPS par IA"
     DEFAULT_DESCRIPTION = (
-        "Générez automatiquement jusqu'à 90% de votre PPSPS en quelques minutes. "
-        "Téléversez vos documents (PGC, plans), notre IA produit un PPSPS conforme."
+        "GÃ©nÃ©rez automatiquement jusqu'Ã  90% de votre PPSPS en quelques minutes. "
+        "TÃ©lÃ©versez vos documents (PGC, plans), notre IA produit un PPSPS conforme."
     )
     DEFAULT_KEYWORDS = [
-        "PPSPS", "génération PPSPS", "PPSPS automatique", "IA BTP",
-        "prévention BTP", "sécurité chantier", "coordonnateur SPS"
+        "PPSPS", "gÃ©nÃ©ration PPSPS", "PPSPS automatique", "IA BTP",
+        "prÃ©vention BTP", "sÃ©curitÃ© chantier", "coordonnateur SPS"
     ]
     OG_IMAGE = f"{SITE_URL}/static/og-image.jpg"
     TWITTER_HANDLE = "@SPSCopilot"
@@ -339,19 +339,19 @@ class SEOConfig:
 
 SEO_PAGES = {
     "home": {
-        "title": "Génération automatique de PPSPS par IA | BTP",
-        "description": "Générez automatiquement jusqu'à 90% de votre PPSPS en quelques minutes avec notre IA spécialisée BTP. Conforme, rapide, économique. Essai gratuit.",
-        "keywords": ["génération PPSPS", "PPSPS automatique", "IA BTP", "générateur PPSPS", "PPSPS en ligne", "automatisation BTP"]
+        "title": "GÃ©nÃ©ration automatique de PPSPS par IA | BTP",
+        "description": "GÃ©nÃ©rez automatiquement jusqu'Ã  90% de votre PPSPS en quelques minutes avec notre IA spÃ©cialisÃ©e BTP. Conforme, rapide, Ã©conomique. Essai gratuit.",
+        "keywords": ["gÃ©nÃ©ration PPSPS", "PPSPS automatique", "IA BTP", "gÃ©nÃ©rateur PPSPS", "PPSPS en ligne", "automatisation BTP"]
     },
     "register": {
-        "title": "Créer un compte gratuit | Inscription",
-        "description": "Créez votre compte gratuit sur PPSPS Generator et commencez à générer vos PPSPS automatiquement en quelques minutes. Sans engagement.",
-        "keywords": ["inscription PPSPS", "créer compte générateur", "essai gratuit BTP"]
+        "title": "CrÃ©er un compte gratuit | Inscription",
+        "description": "CrÃ©ez votre compte gratuit sur PPSPS Generator et commencez Ã  gÃ©nÃ©rer vos PPSPS automatiquement en quelques minutes. Sans engagement.",
+        "keywords": ["inscription PPSPS", "crÃ©er compte gÃ©nÃ©rateur", "essai gratuit BTP"]
     },
     "shop": {
         "title": "Tarifs - Acheter des jetons PPSPS",
-        "description": "50€ par génération de PPSPS. Achetez vos jetons et générez des documents conformes en quelques minutes. Paiement sécurisé Stripe.",
-        "keywords": ["tarifs PPSPS", "prix génération PPSPS", "acheter jetons", "coût PPSPS"]
+        "description": "50â‚¬ par gÃ©nÃ©ration de PPSPS. Achetez vos jetons et gÃ©nÃ©rez des documents conformes en quelques minutes. Paiement sÃ©curisÃ© Stripe.",
+        "keywords": ["tarifs PPSPS", "prix gÃ©nÃ©ration PPSPS", "acheter jetons", "coÃ»t PPSPS"]
     }
 }
 
@@ -385,10 +385,10 @@ import os as _os
 _current_dir = _os.path.dirname(_os.path.abspath(__file__))
 TEMPLATE_PATH = _os.path.join(_current_dir, "248234559-modele-PPSPS.docx")
 
-# ===== Template Filler (intégré) =====
+# ===== Template Filler (intÃ©grÃ©) =====
 """
-Système de remplissage intelligent du template PPSPS.
-Utilise le template DOCX original et le remplit via l'IA avec flexibilité.
+SystÃ¨me de remplissage intelligent du template PPSPS.
+Utilise le template DOCX original et le remplit via l'IA avec flexibilitÃ©.
 """
 
 from docx import Document
@@ -401,14 +401,14 @@ import json
 
 
 def replace_placeholders_in_doc(doc, placeholder_values):
-    """Remplace tous les placeholders dans un document DOCX de manière robuste."""
+    """Remplace tous les placeholders dans un document DOCX de maniÃ¨re robuste."""
     from docx import Document
     
-    logger.info("[PLACEHOLDERS] Début du remplacement dans le document")
+    logger.info("[PLACEHOLDERS] DÃ©but du remplacement dans le document")
     replacements_count = 0
     
     def replace_in_paragraph(paragraph, placeholder_values, location=""):
-        """Remplace les placeholders dans un paragraphe, même s'ils sont fragmentés."""
+        """Remplace les placeholders dans un paragraphe, mÃªme s'ils sont fragmentÃ©s."""
         nonlocal replacements_count
         
         for key, value in placeholder_values.items():
@@ -417,11 +417,11 @@ def replace_placeholders_in_doc(doc, placeholder_values):
                 full_text = paragraph.text
                 new_text = full_text.replace(key, str(value) if value else "")
                 
-                # Si le texte a changé, remplacer tout le paragraphe
+                # Si le texte a changÃ©, remplacer tout le paragraphe
                 if new_text != full_text:
-                    logger.info(f"[PLACEHOLDERS] Trouvé '{key}' dans {location}")
+                    logger.info(f"[PLACEHOLDERS] TrouvÃ© '{key}' dans {location}")
                     logger.info(f"  Avant: {full_text[:100]}")
-                    logger.info(f"  Après: {new_text[:100]}")
+                    logger.info(f"  AprÃ¨s: {new_text[:100]}")
                     replacements_count += 1
                     
                     # Garder le style du premier run
@@ -432,7 +432,7 @@ def replace_placeholders_in_doc(doc, placeholder_values):
                     for _ in range(len(paragraph.runs)):
                         paragraph._element.remove(paragraph.runs[0]._element)
                     
-                    # Ajouter un nouveau run avec le texte remplacé
+                    # Ajouter un nouveau run avec le texte remplacÃ©
                     new_run = paragraph.add_run(new_text)
                     if first_run_style:
                         new_run.style = first_run_style
@@ -450,25 +450,25 @@ def replace_placeholders_in_doc(doc, placeholder_values):
                 for p_idx, paragraph in enumerate(cell.paragraphs):
                     replace_in_paragraph(paragraph, placeholder_values, f"tableau {t_idx}, ligne {r_idx}, cellule {c_idx}, para {p_idx}")
     
-    # Remplacer dans les en-têtes et pieds de page
-    logger.info("[PLACEHOLDERS] Scan des en-têtes et pieds de page...")
+    # Remplacer dans les en-tÃªtes et pieds de page
+    logger.info("[PLACEHOLDERS] Scan des en-tÃªtes et pieds de page...")
     for s_idx, section in enumerate(doc.sections):
         for p_idx, paragraph in enumerate(section.header.paragraphs):
-            replace_in_paragraph(paragraph, placeholder_values, f"en-tête section {s_idx}, para {p_idx}")
+            replace_in_paragraph(paragraph, placeholder_values, f"en-tÃªte section {s_idx}, para {p_idx}")
         
         for p_idx, paragraph in enumerate(section.footer.paragraphs):
             replace_in_paragraph(paragraph, placeholder_values, f"pied de page section {s_idx}, para {p_idx}")
     
-    logger.info(f"[PLACEHOLDERS] Remplacement terminé: {replacements_count} placeholders remplacés")
+    logger.info(f"[PLACEHOLDERS] Remplacement terminÃ©: {replacements_count} placeholders remplacÃ©s")
 
 class TemplateFiller:
-    """Remplit intelligemment le template PPSPS avec les données du projet."""
+    """Remplit intelligemment le template PPSPS avec les donnÃ©es du projet."""
     
     def __init__(self, template_path: str, form_data: dict = None):
         """
         Args:
             template_path: Chemin vers le template DOCX original
-            form_data: Données du formulaire pour les placeholders
+            form_data: DonnÃ©es du formulaire pour les placeholders
         """
         self.template_path = template_path
         self.doc = Document(template_path)
@@ -477,35 +477,35 @@ class TemplateFiller:
     def fill_with_ai(self, project_data: Dict[str, Any], evidence_pack: str, 
                      img_catalog: List[Dict], openai_client, model: str) -> Document:
         """
-        Remplit le template en utilisant l'IA pour analyser les pièces.
+        Remplit le template en utilisant l'IA pour analyser les piÃ¨ces.
         
         Args:
-            project_data: Données du projet (formulaire)
-            evidence_pack: Extraits des pièces uploadées
+            project_data: DonnÃ©es du projet (formulaire)
+            evidence_pack: Extraits des piÃ¨ces uploadÃ©es
             img_catalog: Liste des images disponibles
-            openai_client: Client OpenAI configuré
-            model: Nom du modèle à utiliser
+            openai_client: Client OpenAI configurÃ©
+            model: Nom du modÃ¨le Ã  utiliser
             
         Returns:
             Document DOCX rempli
         """
         # 0. Remplacer les placeholders du formulaire AVANT l'IA
-        logger.info("[PPSPS] Étape 0: Remplacement des placeholders du formulaire")
-        logger.info(f"[PPSPS] form_data reçu: {self.form_data}")
+        logger.info("[PPSPS] Ã‰tape 0: Remplacement des placeholders du formulaire")
+        logger.info(f"[PPSPS] form_data reÃ§u: {self.form_data}")
         placeholder_values = self._prepare_placeholder_values()
         replace_placeholders_in_doc(self.doc, placeholder_values)
-        logger.info("[PPSPS] Placeholders remplacés, passage à l'IA")
+        logger.info("[PPSPS] Placeholders remplacÃ©s, passage Ã  l'IA")
         
-        # 1. Créer le prompt pour l'IA
+        # 1. CrÃ©er le prompt pour l'IA
         prompt = self._build_fill_prompt(project_data, evidence_pack, img_catalog)
         
-        # 2. Appeler l'IA pour obtenir les données de remplissage
+        # 2. Appeler l'IA pour obtenir les donnÃ©es de remplissage
         messages = [
             {
                 "role": "system",
                 "content": "Tu es un expert coordinateur SPS qui remplit des PPSPS. "
                           "Tu analyses les documents fournis et extrais les informations pertinentes. "
-                          "Tu réponds UNIQUEMENT en JSON valide."
+                          "Tu rÃ©ponds UNIQUEMENT en JSON valide."
             },
             {
                 "role": "user",
@@ -519,13 +519,13 @@ class TemplateFiller:
             messages=messages
         )
         
-        # 3. Parser la réponse JSON
+        # 3. Parser la rÃ©ponse JSON
         raw_response = response.choices[0].message.content.strip()
-        # Nettoyer les backticks markdown si présents
+        # Nettoyer les backticks markdown si prÃ©sents
         raw_response = raw_response.replace('```json', '').replace('```', '').strip()
         fill_data = json.loads(raw_response)
         
-        # 4. Remplir le template avec les données
+        # 4. Remplir le template avec les donnÃ©es
         self._fill_document(fill_data, img_catalog)
         
         return self.doc
@@ -536,21 +536,21 @@ class TemplateFiller:
         
         return f"""Tu dois extraire et structurer les informations pour remplir un PPSPS.
 
-🎯 RÈGLE ABSOLUE : PRIORITÉ DES SOURCES
-1. **TOUJOURS utiliser EN PRIORITÉ les informations des PIÈCES UPLOADÉES** (extraits ci-dessous)
-2. Le **formulaire** sert UNIQUEMENT de **FALLBACK** si l'info est absente des pièces
-3. Si une info est trouvée dans les pièces, l'utiliser MÊME si le formulaire contient autre chose
+ðŸŽ¯ RÃˆGLE ABSOLUE : PRIORITÃ‰ DES SOURCES
+1. **TOUJOURS utiliser EN PRIORITÃ‰ les informations des PIÃˆCES UPLOADÃ‰ES** (extraits ci-dessous)
+2. Le **formulaire** sert UNIQUEMENT de **FALLBACK** si l'info est absente des piÃ¨ces
+3. Si une info est trouvÃ©e dans les piÃ¨ces, l'utiliser MÃŠME si le formulaire contient autre chose
 
-📄 PIÈCES UPLOADÉES (PRIORITÉ ABSOLUE) :
+ðŸ“„ PIÃˆCES UPLOADÃ‰ES (PRIORITÃ‰ ABSOLUE) :
 {evidence_pack}
 
-📝 FORMULAIRE (FALLBACK UNIQUEMENT) :
+ðŸ“ FORMULAIRE (FALLBACK UNIQUEMENT) :
 {json.dumps(project_data, ensure_ascii=False, indent=2)}
 
-🖼️ IMAGES DISPONIBLES :
+ðŸ–¼ï¸ IMAGES DISPONIBLES :
 {json.dumps(img_catalog, ensure_ascii=False, indent=2)}
 
-Réponds en JSON avec cette structure EXACTE :
+RÃ©ponds en JSON avec cette structure EXACTE :
 
 {{
   "informations_generales": {{
@@ -560,9 +560,9 @@ Réponds en JSON avec cette structure EXACTE :
     "email": "...",
     "fax": "...",
     "nom_chef_entreprise": "...",
-    "description_operation": "Description détaillée de l'opération/chantier",
+    "description_operation": "Description dÃ©taillÃ©e de l'opÃ©ration/chantier",
     "lot": "Lot de l'entreprise",
-    "travaux_confies": "Description des travaux confiés à l'entreprise",
+    "travaux_confies": "Description des travaux confiÃ©s Ã  l'entreprise",
     "date_debut": "JJ/MM/AAAA",
     "date_fin": "JJ/MM/AAAA",
     "effectif_moyen": "nombre",
@@ -601,26 +601,26 @@ Réponds en JSON avec cette structure EXACTE :
     "centre_antipoison": "...",
     "sst_chantier": [{{"nom": "...", "telephone": "..."}}],
     "point_rassemblement": "Description du point de rassemblement",
-    "consignes_specifiques": "Consignes spécifiques au chantier"
+    "consignes_specifiques": "Consignes spÃ©cifiques au chantier"
   }},
   
   "risques_travaux": [
     {{
       "phase": "Phase de travail 1",
-      "moyens": "Matériels, équipements utilisés",
-      "risques_entreprise": "Risques pour nos salariés",
+      "moyens": "MatÃ©riels, Ã©quipements utilisÃ©s",
+      "risques_entreprise": "Risques pour nos salariÃ©s",
       "risques_autres": "Risques pour les autres intervenants",
-      "prevention": "Mesures de prévention mises en place"
+      "prevention": "Mesures de prÃ©vention mises en place"
     }}
   ],
   
   "risques_environnement": [
     {{
-      "categorie": "Déplacements du personnel sur le chantier",
-      "contraintes_environnement": "Contraintes liées à l'environnement",
+      "categorie": "DÃ©placements du personnel sur le chantier",
+      "contraintes_environnement": "Contraintes liÃ©es Ã  l'environnement",
       "risques_autres_intervenants": "Risques des autres intervenants",
-      "prevention": "Moyens de prévention",
-      "observations": "Observations éventuelles"
+      "prevention": "Moyens de prÃ©vention",
+      "observations": "Observations Ã©ventuelles"
     }},
     {{
       "categorie": "Organisation du chantier",
@@ -647,28 +647,28 @@ Réponds en JSON avec cette structure EXACTE :
   ]
 }}
 
-⚠️ RÈGLES IMPORTANTES :
-- Si une info n'est pas trouvée : laisser chaîne vide "" ou null
-- Pour les téléphones : format exact trouvé dans les docs (ex: "01 23 45 67 89")
+âš ï¸ RÃˆGLES IMPORTANTES :
+- Si une info n'est pas trouvÃ©e : laisser chaÃ®ne vide "" ou null
+- Pour les tÃ©lÃ©phones : format exact trouvÃ© dans les docs (ex: "01 23 45 67 89")
 - Pour les dates : format JJ/MM/AAAA
-- Pour les risques : être FACTUEL et PRÉCIS (pas de généralités)
-- Séparer les différents risques/phases avec des détails distincts
+- Pour les risques : Ãªtre FACTUEL et PRÃ‰CIS (pas de gÃ©nÃ©ralitÃ©s)
+- SÃ©parer les diffÃ©rents risques/phases avec des dÃ©tails distincts
 - Pour les annexes : utiliser UNIQUEMENT les noms de fichiers du catalogue fourni
-- Si pas d'info dans les pièces ET dans le formulaire : laisser vide
+- Si pas d'info dans les piÃ¨ces ET dans le formulaire : laisser vide
 """
     
     def _fill_document(self, fill_data: Dict, img_catalog: List[Dict]):
-        """Remplit le document avec les données extraites par l'IA."""
+        """Remplit le document avec les donnÃ©es extraites par l'IA."""
         
-        # 1. Remplir le premier tableau (informations générales)
+        # 1. Remplir le premier tableau (informations gÃ©nÃ©rales)
         if len(self.doc.tables) > 0:
             self._fill_info_table(self.doc.tables[0], fill_data.get("informations_generales", {}))
         
-        # 2. Remplir le deuxième tableau (description opération)
+        # 2. Remplir le deuxiÃ¨me tableau (description opÃ©ration)
         if len(self.doc.tables) > 1:
             self._fill_operation_table(self.doc.tables[1], fill_data.get("informations_generales", {}))
         
-        # 3. Remplir le tableau hygiène
+        # 3. Remplir le tableau hygiÃ¨ne
         if len(self.doc.tables) > 2:
             self._fill_hygiene_table(self.doc.tables[2], fill_data.get("mesures_hygiene", {}))
         
@@ -685,12 +685,12 @@ Réponds en JSON avec cette structure EXACTE :
         # 6. Remplir les sections texte (organismes, secours)
         self._fill_text_sections(fill_data)
         
-        # 7. Ajouter les annexes à la fin
+        # 7. Ajouter les annexes Ã  la fin
         self._add_annexes(fill_data.get("annexes", []), img_catalog)
     
     
     def _prepare_placeholder_values(self) -> dict:
-        """Prépare les valeurs des placeholders à partir des données du formulaire."""
+        """PrÃ©pare les valeurs des placeholders Ã  partir des donnÃ©es du formulaire."""
         values = {
             "{{NOM_PROJET}}": self.form_data.get("name", ""),
             "{{ADRESSE_CHANTIER}}": self.form_data.get("address", ""),
@@ -709,18 +709,18 @@ Réponds en JSON avec cette structure EXACTE :
         }
         
         # LOG: Afficher les valeurs des placeholders
-        logger.info("[PLACEHOLDERS] Valeurs préparées:")
+        logger.info("[PLACEHOLDERS] Valeurs prÃ©parÃ©es:")
         for key, val in values.items():
             logger.info(f"  {key} = '{val}'")
         
         return values
 
     def _fill_info_table(self, table, data: Dict):
-        """Remplit le tableau d'informations générales (TABLE 0)."""
+        """Remplit le tableau d'informations gÃ©nÃ©rales (TABLE 0)."""
         if len(table.rows) > 0 and len(table.rows[0].cells) > 0:
             cell = table.rows[0].cells[0]
             
-            # Construire le texte avec les données
+            # Construire le texte avec les donnÃ©es
             nom = data.get("nom_entreprise", "")
             tel = data.get("telephone", "")
             adresse = data.get("adresse", "")
@@ -729,18 +729,18 @@ Réponds en JSON avec cette structure EXACTE :
             chef = data.get("nom_chef_entreprise", "")
             
             new_text = (
-                f"Nom de l'entreprise : {nom if nom else '…' * 40}\n"
-                f"Tél. : {tel if tel else '…' * 20}\n"
-                f"Adresse : {adresse if adresse else '…' * 50}\n"
-                f"E-mail : {email if email else '…' * 30}\n"
-                f"Fax : {fax if fax else '…' * 30}\n"
-                f"Nom du Chef d'entreprise : {chef if chef else '…' * 40}"
+                f"Nom de l'entreprise : {nom if nom else 'â€¦' * 40}\n"
+                f"TÃ©l. : {tel if tel else 'â€¦' * 20}\n"
+                f"Adresse : {adresse if adresse else 'â€¦' * 50}\n"
+                f"E-mail : {email if email else 'â€¦' * 30}\n"
+                f"Fax : {fax if fax else 'â€¦' * 30}\n"
+                f"Nom du Chef d'entreprise : {chef if chef else 'â€¦' * 40}"
             )
             
             cell.text = new_text
     
     def _fill_operation_table(self, table, data: Dict):
-        """Remplit le tableau description de l'opération (TABLE 1)."""
+        """Remplit le tableau description de l'opÃ©ration (TABLE 1)."""
         if len(table.rows) >= 4:
             # Ligne 0 : Description et Lot
             if len(table.rows[0].cells) >= 3:
@@ -749,7 +749,7 @@ Réponds en JSON avec cette structure EXACTE :
                 table.rows[0].cells[1].text = desc if desc else ""
                 table.rows[0].cells[2].text = f"Lot : {lot if lot else ''}"
             
-            # Ligne 1 : Travaux confiés
+            # Ligne 1 : Travaux confiÃ©s
             if len(table.rows[1].cells) >= 2:
                 travaux = data.get("travaux_confies", "")
                 table.rows[1].cells[1].text = travaux if travaux else ""
@@ -758,7 +758,7 @@ Réponds en JSON avec cette structure EXACTE :
             if len(table.rows[2].cells) >= 2:
                 debut = data.get("date_debut", "")
                 fin = data.get("date_fin", "")
-                table.rows[2].cells[1].text = f"Date de début : {debut}\tDate de fin : {fin}"
+                table.rows[2].cells[1].text = f"Date de dÃ©but : {debut}\tDate de fin : {fin}"
             
             # Ligne 3 : Effectifs
             if len(table.rows[3].cells) >= 2:
@@ -767,7 +767,7 @@ Réponds en JSON avec cette structure EXACTE :
                 table.rows[3].cells[1].text = f"Effectif moyen : {moyen}\tEffectif de pointe : {pointe}"
     
     def _fill_hygiene_table(self, table, data: Dict):
-        """Remplit le tableau mesures d'hygiène (TABLE 2)."""
+        """Remplit le tableau mesures d'hygiÃ¨ne (TABLE 2)."""
         # Vestiaires (lignes 0-2)
         if len(table.rows) > 2:
             vest = data.get("vestiaires", {})
@@ -800,7 +800,7 @@ Réponds en JSON avec cette structure EXACTE :
         if not risques or len(table.rows) < 3:
             return
         
-        # Supprimer les lignes existantes après l'en-tête (garder lignes 0-1)
+        # Supprimer les lignes existantes aprÃ¨s l'en-tÃªte (garder lignes 0-1)
         while len(table.rows) > 2:
             table._element.remove(table.rows[-1]._element)
         
@@ -816,22 +816,22 @@ Réponds en JSON avec cette structure EXACTE :
                 cells[3].text = risque.get("risques_autres", "")
                 cells[4].text = risque.get("prevention", "")
                 
-                # Ajouter une bordure pointillée pour séparer les risques
+                # Ajouter une bordure pointillÃ©e pour sÃ©parer les risques
                 self._add_dotted_border(row)
     
     def _fill_risques_env_table(self, table, risques: List[Dict]):
-        """Remplit le tableau risques liés à l'environnement (TABLE 4)."""
+        """Remplit le tableau risques liÃ©s Ã  l'environnement (TABLE 4)."""
         if not risques or len(table.rows) < 2:
             return
         
-        # Les 3 catégories fixes sont déjà dans le template (lignes 2-4)
+        # Les 3 catÃ©gories fixes sont dÃ©jÃ  dans le template (lignes 2-4)
         # On remplit juste les cellules correspondantes
-        for i, risque in enumerate(risques[:3]):  # Max 3 catégories
+        for i, risque in enumerate(risques[:3]):  # Max 3 catÃ©gories
             row_idx = 2 + i
             if row_idx < len(table.rows):
                 row = table.rows[row_idx]
                 if len(row.cells) >= 5:
-                    # La première cellule contient déjà la catégorie
+                    # La premiÃ¨re cellule contient dÃ©jÃ  la catÃ©gorie
                     row.cells[1].text = risque.get("contraintes_environnement", "")
                     row.cells[2].text = risque.get("risques_autres_intervenants", "")
                     row.cells[3].text = risque.get("prevention", "")
@@ -853,37 +853,37 @@ Réponds en JSON avec cette structure EXACTE :
             elif "SECOURS ET EVACUATION" in text and organismes_idx is not None:
                 secours_idx = i
             elif "MESURES" in text or "HYGIENE" in text:
-                break  # On s'arrête après avoir trouvé les sections
+                break  # On s'arrÃªte aprÃ¨s avoir trouvÃ© les sections
         
-        # Remplir ORGANISMES DE PREVENTION (paragraphes juste après le titre)
+        # Remplir ORGANISMES DE PREVENTION (paragraphes juste aprÃ¨s le titre)
         if organismes_idx is not None and orga:
             insert_idx = organismes_idx + 1
             content = []
             
             med = orga.get("medecine_travail", {})
             if med.get("nom") or med.get("telephone"):
-                content.append(f"Médecine du travail : {med.get('nom', '')} - Tél : {med.get('telephone', '')}")
+                content.append(f"MÃ©decine du travail : {med.get('nom', '')} - TÃ©l : {med.get('telephone', '')}")
             
             insp = orga.get("inspecteur_travail", {})
             if insp.get("nom") or insp.get("telephone"):
-                content.append(f"Inspection du travail : {insp.get('nom', '')} - Tél : {insp.get('telephone', '')}")
+                content.append(f"Inspection du travail : {insp.get('nom', '')} - TÃ©l : {insp.get('telephone', '')}")
             
             csps = orga.get("csps", {})
             if csps.get("nom") or csps.get("telephone"):
-                content.append(f"CSPS : {csps.get('nom', '')} - Tél : {csps.get('telephone', '')}")
+                content.append(f"CSPS : {csps.get('nom', '')} - TÃ©l : {csps.get('telephone', '')}")
             
             carsat = orga.get("carsat", {})
             if carsat.get("nom") or carsat.get("telephone"):
-                content.append(f"CARSAT : {carsat.get('nom', '')} - Tél : {carsat.get('telephone', '')}")
+                content.append(f"CARSAT : {carsat.get('nom', '')} - TÃ©l : {carsat.get('telephone', '')}")
             
             if content:
-                # Remplir ou créer le paragraphe
+                # Remplir ou crÃ©er le paragraphe
                 if insert_idx < len(self.doc.paragraphs):
                     self.doc.paragraphs[insert_idx].text = "\n".join(content)
                 else:
                     p = self.doc.add_paragraph("\n".join(content))
         
-        # Remplir SECOURS ET EVACUATION (paragraphe juste après le titre)
+        # Remplir SECOURS ET EVACUATION (paragraphe juste aprÃ¨s le titre)
         if secours_idx is not None and secours:
             insert_idx = secours_idx + 1
             content = []
@@ -908,17 +908,17 @@ Réponds en JSON avec cette structure EXACTE :
                 content.append(f"\nPoint de rassemblement : {secours.get('point_rassemblement')}")
             
             if secours.get("consignes_specifiques"):
-                content.append(f"\nConsignes spécifiques :\n{secours.get('consignes_specifiques')}")
+                content.append(f"\nConsignes spÃ©cifiques :\n{secours.get('consignes_specifiques')}")
             
             if content:
-                # Remplir ou créer le paragraphe
+                # Remplir ou crÃ©er le paragraphe
                 if insert_idx < len(self.doc.paragraphs):
                     self.doc.paragraphs[insert_idx].text = "\n".join(content)
                 else:
                     p = self.doc.add_paragraph("\n".join(content))
     
     def _add_annexes(self, annexes: List[Dict], img_catalog: List[Dict]):
-        """Ajoute les annexes à la fin du document."""
+        """Ajoute les annexes Ã  la fin du document."""
         
         # Trouver la section ANNEXES
         annexes_found = False
@@ -963,15 +963,15 @@ Réponds en JSON avec cette structure EXACTE :
                     try:
                         from docx.shared import Inches
                         self.doc.add_picture(img_path, width=Inches(6))
-                        # Légende
+                        # LÃ©gende
                         p = self.doc.add_paragraph(f"Figure : {img_name}")
-                        p.alignment = 1  # Centré
+                        p.alignment = 1  # CentrÃ©
                     except Exception:
                         # Si erreur, ajouter juste une mention
                         self.doc.add_paragraph(f"[Image : {img_name}]")
     
     def _add_dotted_border(self, row):
-        """Ajoute une bordure pointillée en bas d'une ligne de tableau."""
+        """Ajoute une bordure pointillÃ©e en bas d'une ligne de tableau."""
         tcPr = row.cells[0]._element.get_or_add_tcPr()
         tcBorders = OxmlElement('w:tcBorders')
         bottom = OxmlElement('w:bottom')
@@ -994,6 +994,91 @@ app = FastAPI(
     openapi_url=None
 )
 
+# =====================================================================
+#                   ROUTES SEO - PRIORITÉ ABSOLUE
+# =====================================================================
+# Ces routes DOIVENT être définies AVANT les middlewares pour éviter
+# les interceptions de session ou redirections
+
+from fastapi.responses import Response
+
+@app.get("/sitemap.xml", include_in_schema=False)
+async def sitemap_xml():
+    """
+    Sitemap XML pour Google Search Console et moteurs de recherche.
+    
+    Cette route est définie en premier pour éviter les conflits avec:
+    - Les middlewares de session
+    - Les redirections vers /home
+    - D'autres routes génériques
+    """
+    # URL en dur pour garantir la stabilité
+    SITE_URL = "https://ppsps-generator.fr"
+    
+    urls = [
+        {"loc": SITE_URL, "priority": "1.0", "changefreq": "daily"},
+        {"loc": f"{SITE_URL}/home", "priority": "1.0", "changefreq": "daily"},
+        {"loc": f"{SITE_URL}/register", "priority": "0.8", "changefreq": "monthly"},
+        {"loc": f"{SITE_URL}/login", "priority": "0.7", "changefreq": "monthly"},
+        {"loc": f"{SITE_URL}/tokens/shop", "priority": "0.9", "changefreq": "weekly"},
+    ]
+    
+    # Construction du XML
+    sitemap_xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    sitemap_xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    
+    for url in urls:
+        sitemap_xml += '  <url>\n'
+        sitemap_xml += f'    <loc>{url["loc"]}</loc>\n'
+        sitemap_xml += f'    <priority>{url["priority"]}</priority>\n'
+        sitemap_xml += f'    <changefreq>{url["changefreq"]}</changefreq>\n'
+        sitemap_xml += '  </url>\n'
+    
+    sitemap_xml += '</urlset>'
+    
+    # Retour avec le bon content-type
+    return Response(
+        content=sitemap_xml, 
+        media_type="application/xml",
+        headers={
+            "Cache-Control": "public, max-age=3600",  # Cache 1h
+            "Content-Type": "application/xml; charset=utf-8"
+        }
+    )
+
+
+@app.get("/robots.txt", include_in_schema=False)
+async def robots_txt_file():
+    """
+    Fichier robots.txt pour les crawlers.
+    
+    Indique aux robots d'indexation:
+    - Quelles pages indexer
+    - Quelles pages ne pas indexer
+    - Où trouver le sitemap
+    """
+    robots_content = """User-agent: *
+Allow: /
+Disallow: /ui/
+Disallow: /api/
+Disallow: /files/
+Disallow: /admin/
+
+# Sitemap
+Sitemap: https://ppsps-generator.fr/sitemap.xml
+"""
+    
+    return Response(
+        content=robots_content, 
+        media_type="text/plain",
+        headers={
+            "Cache-Control": "public, max-age=86400",  # Cache 24h
+            "Content-Type": "text/plain; charset=utf-8"
+        }
+    )
+
+# =====================================================================
+
 app.add_middleware(
     SessionMiddleware,
     secret_key=SECRET_KEY,
@@ -1006,7 +1091,7 @@ app.add_middleware(
 FRONTEND_ORIGINS = [o.strip() for o in os.getenv("FRONTEND_ORIGINS", "").split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=FRONTEND_ORIGINS if FRONTEND_ORIGINS else [],  # vide => même origine
+    allow_origins=FRONTEND_ORIGINS if FRONTEND_ORIGINS else [],  # vide => mÃªme origine
     allow_credentials=True,
     allow_methods=["GET","POST","DELETE","OPTIONS"],
     allow_headers=["Authorization","Content-Type","X-CSRF-Token"],
@@ -1036,7 +1121,7 @@ def _check_csrf(request: Request, token_from_form: str | None):
 @app.on_event("startup")
 def on_startup():
     init_db()
-    # Créer le package de tokens par défaut
+    # CrÃ©er le package de tokens par dÃ©faut
     with Session(engine) as session:
         StripeService.create_default_packages(session)
 
@@ -1120,9 +1205,9 @@ def _safe_name(name: str) -> str:
     return "".join(c for c in name if c.isalnum() or c in (".", "_", "-", " ")).strip()
 
 def _project_upload_dir(project_id: int) -> str:
-    # retourner juste "<id>" pour être combiné avec UPLOADS_ROOT
+    # retourner juste "<id>" pour Ãªtre combinÃ© avec UPLOADS_ROOT
     d = os.path.join(str(project_id))
-    os.makedirs(os.path.join("uploads", d), exist_ok=True)  # garde la création physique si tu veux
+    os.makedirs(os.path.join("uploads", d), exist_ok=True)  # garde la crÃ©ation physique si tu veux
     return d
 
 def _ext(path: str) -> str:
@@ -1149,13 +1234,13 @@ def extract_text_from_file(path: str) -> str:
     except Exception:
         return ""
     
-    # --- Helpers sécurité & rate-limit ---
+    # --- Helpers sÃ©curitÃ© & rate-limit ---
 
 UPLOADS_ROOT = os.path.abspath("uploads")
 _RATE_BUCKET = {}  # { key: [timestamps_sec...] }
 
 def _safe_path(base: str, path: str) -> str:
-    """Empêche path traversal : renvoie un chemin normalisé OBLIGATOIREMENT sous base."""
+    """EmpÃªche path traversal : renvoie un chemin normalisÃ© OBLIGATOIREMENT sous base."""
     base_abs = os.path.abspath(base)
     full = os.path.abspath(os.path.normpath(os.path.join(base_abs, path)))
     if not full.startswith(base_abs + os.sep) and full != base_abs:
@@ -1163,83 +1248,83 @@ def _safe_path(base: str, path: str) -> str:
     return full
 
 def _require_rate_limit(key: str, max_calls: int = 1, window_sec: int = 60):
-    """Limite simple en mémoire (par worker) : max_calls / window_sec."""
+    """Limite simple en mÃ©moire (par worker) : max_calls / window_sec."""
     now = int(datetime.utcnow().timestamp())
     bucket = _RATE_BUCKET.get(key, [])
     bucket = [t for t in bucket if now - t < window_sec]
     if len(bucket) >= max_calls:
-        raise HTTPException(status_code=429, detail="Trop de requêtes, réessaie bientôt.")
+        raise HTTPException(status_code=429, detail="Trop de requÃªtes, rÃ©essaie bientÃ´t.")
     bucket.append(now)
     _RATE_BUCKET[key] = bucket
 
 def _internal_error(msg: str = "Erreur interne."):
-    # Évite de renvoyer des détails sensibles (stack, messages upstream, etc.)
+    # Ã‰vite de renvoyer des dÃ©tails sensibles (stack, messages upstream, etc.)
     raise HTTPException(status_code=500, detail=msg)
 
 
 # =====================================================================
-#        DÉTECTION DE LOTS (heuristique)
+#        DÃ‰TECTION DE LOTS (heuristique)
 # =====================================================================
 WORK_KEYWORDS = {
-    "toiture": ["toiture", "étanchéité", "charpente", "couverture"],
+    "toiture": ["toiture", "Ã©tanchÃ©itÃ©", "charpente", "couverture"],
     "levage": ["grue", "levage", "manutention lourde", "palonnier"],
-    "électrique": ["électricité", "tableau", "câblage", "TGBT", "consignation"],
-    "échafaudage": ["échafaudage", "plancher de travail"],
-    "peinture": ["peinture", "revêtement"],
-    "maçonnerie": ["maçonnerie", "béton", "coffrage"],
+    "Ã©lectrique": ["Ã©lectricitÃ©", "tableau", "cÃ¢blage", "TGBT", "consignation"],
+    "Ã©chafaudage": ["Ã©chafaudage", "plancher de travail"],
+    "peinture": ["peinture", "revÃªtement"],
+    "maÃ§onnerie": ["maÃ§onnerie", "bÃ©ton", "coffrage"],
     "plomberie": ["plomberie", "PVC", "cuivre", "vanne", "collecteur"],
     "climatisation": ["CVC", "climatisation", "ventilation", "CTA", "gaines"],
-    "soudure": ["soudure", "meulage", "travaux à chaud", "chalumeau"],
+    "soudure": ["soudure", "meulage", "travaux Ã  chaud", "chalumeau"],
 }
 
 def _check_files_relevance_with_ai(session: Session, project_id: int) -> tuple[bool, str]:
     """
-    Utilise l'IA pour déterminer si les fichiers sont pertinents pour un PPSPS.
-    Plus intelligent et flexible qu'une simple détection de mots-clés.
+    Utilise l'IA pour dÃ©terminer si les fichiers sont pertinents pour un PPSPS.
+    Plus intelligent et flexible qu'une simple dÃ©tection de mots-clÃ©s.
     
     Returns:
         (is_relevant: bool, message: str)
         - Si is_relevant=False : message contient la raison du rejet
-        - Si is_relevant=True et message non vide : avertissement (génération autorisée)
+        - Si is_relevant=True et message non vide : avertissement (gÃ©nÃ©ration autorisÃ©e)
         - Si is_relevant=True et message vide : tout est OK
     """
-    # 1. Récupérer le contenu des fichiers (tous concaténés)
+    # 1. RÃ©cupÃ©rer le contenu des fichiers (tous concatÃ©nÃ©s)
     blob = _project_text_blob(session, project_id, limit_chars=15_000)
     
     if not blob or len(blob.strip()) < 200:
         return False, (
-            "Les fichiers uploadés ne contiennent pas assez de texte exploitable. "
-            "Vérifiez que vos documents sont lisibles et pertinents (PGC, plans, DICT, etc.)"
+            "Les fichiers uploadÃ©s ne contiennent pas assez de texte exploitable. "
+            "VÃ©rifiez que vos documents sont lisibles et pertinents (PGC, plans, DICT, etc.)"
         )
     
     # 2. Construire le prompt pour l'IA
-    prompt = f"""Tu es un expert en prévention BTP et coordinateur SPS. Analyse le contenu ci-dessous et détermine s'il est pertinent pour générer un PPSPS (Plan Particulier de Sécurité et de Protection de la Santé).
+    prompt = f"""Tu es un expert en prÃ©vention BTP et coordinateur SPS. Analyse le contenu ci-dessous et dÃ©termine s'il est pertinent pour gÃ©nÃ©rer un PPSPS (Plan Particulier de SÃ©curitÃ© et de Protection de la SantÃ©).
 
 Documents PERTINENTS pour un PPSPS (accepter) :
-- PGC (Plan Général de Coordination)
+- PGC (Plan GÃ©nÃ©ral de Coordination)
 - PPSPS existants ou brouillons
-- Plans de prévention
+- Plans de prÃ©vention
 - Plans de circulation / PICH
-- DICT/DT (déclarations de réseaux)
+- DICT/DT (dÃ©clarations de rÃ©seaux)
 - Plans d'installations de chantier
-- Documents techniques (VRD, gros œuvre, etc.)
-- Fiches de Données de Sécurité (FDS)
-- Notices de postes, modes opératoires
+- Documents techniques (VRD, gros Å“uvre, etc.)
+- Fiches de DonnÃ©es de SÃ©curitÃ© (FDS)
+- Notices de postes, modes opÃ©ratoires
 - Plans architecte, plans masse
 - CCTP, cahier des charges travaux
 
 Documents NON PERTINENTS (rejeter) :
 - CV / lettres de motivation
-- Factures / devis génériques sans lien technique
-- Contrats commerciaux / RIB / statuts société
+- Factures / devis gÃ©nÃ©riques sans lien technique
+- Contrats commerciaux / RIB / statuts sociÃ©tÃ©
 - Documents administratifs sans lien avec le chantier
 - Manuels utilisateur sans rapport avec le BTP
 - Documents personnels
 
-CONTENU À ANALYSER :
+CONTENU Ã€ ANALYSER :
 {blob[:12000]}
 
-Réponds UNIQUEMENT par un JSON au format exact suivant (pas de texte avant/après) :
+RÃ©ponds UNIQUEMENT par un JSON au format exact suivant (pas de texte avant/aprÃ¨s) :
 {{
   "pertinent": true ou false,
   "confiance": nombre entre 0 et 100,
@@ -1247,23 +1332,23 @@ Réponds UNIQUEMENT par un JSON au format exact suivant (pas de texte avant/apr�
   "raison": "Explication courte en 1-2 phrases maximum"
 }}
 
-Règles :
-- Si les documents semblent liés au BTP/chantier : pertinent=true
+RÃ¨gles :
+- Si les documents semblent liÃ©s au BTP/chantier : pertinent=true
 - Si uniquement documents administratifs/RH : pertinent=false
 - Si doute : pertinent=true mais confiance < 70
-- types_detectes : liste précise (ex: ["PGC", "plan circulation"])
+- types_detectes : liste prÃ©cise (ex: ["PGC", "plan circulation"])
 - raison : courte et claire"""
 
-    # 3. Appel à l'IA
+    # 3. Appel Ã  l'IA
     try:
         response = client.chat.completions.create(
             model=OPENROUTER_DEFAULT_MODEL,
-            temperature=0.1,  # Peu de créativité pour plus de précision
+            temperature=0.1,  # Peu de crÃ©ativitÃ© pour plus de prÃ©cision
             max_tokens=300,
             messages=[
                 {
                     "role": "system", 
-                    "content": "Tu es un expert BTP. Réponds UNIQUEMENT en JSON valide, sans texte avant/après."
+                    "content": "Tu es un expert BTP. RÃ©ponds UNIQUEMENT en JSON valide, sans texte avant/aprÃ¨s."
                 },
                 {"role": "user", "content": prompt}
             ]
@@ -1271,12 +1356,12 @@ Règles :
         
         raw = response.choices[0].message.content.strip()
         
-        # Nettoyer les éventuels backticks markdown
+        # Nettoyer les Ã©ventuels backticks markdown
         raw = raw.replace('```json', '').replace('```', '').strip()
         
-        # Vérifier que la réponse n'est pas vide
+        # VÃ©rifier que la rÃ©ponse n'est pas vide
         if not raw:
-            logger.warning("[RELEVANCE] Réponse vide de l'IA, on laisse passer")
+            logger.warning("[RELEVANCE] RÃ©ponse vide de l'IA, on laisse passer")
             return True, ""
         
         # Parser le JSON
@@ -1290,13 +1375,13 @@ Règles :
         # Log pour debug
         logger.info(f"[RELEVANCE] Pertinent={pertinent}, Confiance={confiance}%, Types={types_detectes}")
         
-        # 4. Décision finale
+        # 4. DÃ©cision finale
         if not pertinent:
             # REJET : Documents clairement non pertinents
             return False, (
-                f"❌ Documents non pertinents pour un PPSPS.\n\n"
+                f"âŒ Documents non pertinents pour un PPSPS.\n\n"
                 f"Raison : {raison}\n\n"
-                f"Veuillez uploader des documents liés au chantier : PGC, plans de prévention, "
+                f"Veuillez uploader des documents liÃ©s au chantier : PGC, plans de prÃ©vention, "
                 f"DICT, plans de circulation, documents techniques, etc."
             )
         
@@ -1304,24 +1389,24 @@ Règles :
         if confiance < 70:
             types_str = ", ".join(types_detectes) if types_detectes else "documents partiels"
             return True, (
-                f"⚠️ Documents détectés ({types_str}) mais qualité incertaine (confiance {confiance}%). "
+                f"âš ï¸ Documents dÃ©tectÃ©s ({types_str}) mais qualitÃ© incertaine (confiance {confiance}%). "
                 f"Raison : {raison}\n"
-                f"La génération est autorisée mais vérifiez le résultat attentivement."
+                f"La gÃ©nÃ©ration est autorisÃ©e mais vÃ©rifiez le rÃ©sultat attentivement."
             )
         
         # ACCEPTATION totale
         return True, ""
         
     except json.JSONDecodeError as e:
-        # Si l'IA n'a pas renvoyé du JSON valide
+        # Si l'IA n'a pas renvoyÃ© du JSON valide
         logger.error(f"[RELEVANCE] JSON invalide : {e}")
-        # Principe de précaution : on accepte mais on log l'erreur
+        # Principe de prÃ©caution : on accepte mais on log l'erreur
         return True, ""
         
     except Exception as e:
         # Erreur technique (API, timeout, etc.)
         logger.error(f"[RELEVANCE] Erreur IA : {e}")
-        # Principe de précaution : on laisse passer
+        # Principe de prÃ©caution : on laisse passer
         return True, ""
 
 def detect_works_from_text(text: str) -> list[str]:
@@ -1344,7 +1429,7 @@ def _project_text_blob(session: Session, project_id: int, limit_chars: int = 80_
     return blob[:limit_chars]
 
 # =====================================================================
-#                     EXPORTS DOCX/PDF (Markdown → DOCX)
+#                     EXPORTS DOCX/PDF (Markdown â†’ DOCX)
 # =====================================================================
 @app.post("/export_docx_stream")
 def export_docx_stream(markdown: str = Body(...), filename: str = Body("document.docx")):
@@ -1352,7 +1437,7 @@ def export_docx_stream(markdown: str = Body(...), filename: str = Body("document
     d = DocxDocument()
     _build_doc_styles(d)
 
-    # 2) Remplissage à partir du markdown découpé (texte / tableaux)
+    # 2) Remplissage Ã  partir du markdown dÃ©coupÃ© (texte / tableaux)
     segments = _split_text_and_tables(markdown or "")
     for kind, *payload in segments:
         if kind == "text":
@@ -1388,8 +1473,8 @@ def _img_to_data_url(path: str) -> str:
     return f"data:{mime};base64,{b64}"
 
 IMG_RANKER_SYSTEM = (
-    "Tu es un coordonnateur SPS expert. Tu reçois des images extraites de pièces (PGC, plans...). "
-    "Objectif: décider si chaque image est RÉELLEMENT pertinente pour un PPSPS et où l'insérer. "
+    "Tu es un coordonnateur SPS expert. Tu reÃ§ois des images extraites de piÃ¨ces (PGC, plans...). "
+    "Objectif: dÃ©cider si chaque image est RÃ‰ELLEMENT pertinente pour un PPSPS et oÃ¹ l'insÃ©rer. "
     "ATTENTION : REJETTE IMPITOYABLEMENT les templates, fonds de page, logos, cadres vides."
 )
 
@@ -1402,41 +1487,41 @@ Analyse les images et renvoie un JSON strict, liste d'objets:
     "category": "plan_circulation"|"plan_levage"|"plan_reseaux"|"securite_secours"|"chimique_fds"|"autres",
     "suggested_location": "corps"|"Annexe A"|"Annexe B"|"Annexe C"|"Annexe D",
     "confidence": 0..1,
-    "caption": "légende courte (<=120c)",
-    "reason": "raison brève (<=120c)"
+    "caption": "lÃ©gende courte (<=120c)",
+    "reason": "raison brÃ¨ve (<=120c)"
   }}
 ]
 
-**RÈGLES DE TRI ULTRA-STRICTES** :
+**RÃˆGLES DE TRI ULTRA-STRICTES** :
 
-🚫 **REJETER SYSTÉMATIQUEMENT (keep=false)** :
+ðŸš« **REJETER SYSTÃ‰MATIQUEMENT (keep=false)** :
 - Couvertures, pages de garde, sommaires
-- Logos, filigranes, en-têtes/pieds de page
+- Logos, filigranes, en-tÃªtes/pieds de page
 - Cadres vides, gabarits, templates de mise en page
-- Fonds décoratifs sans contenu technique
-- Pages avec uniquement du texte (pas de schéma/plan)
-- Snapshots de pages entières sans zoom sur un élément précis
-- Images floues, illisibles ou de trop faible résolution
+- Fonds dÃ©coratifs sans contenu technique
+- Pages avec uniquement du texte (pas de schÃ©ma/plan)
+- Snapshots de pages entiÃ¨res sans zoom sur un Ã©lÃ©ment prÃ©cis
+- Images floues, illisibles ou de trop faible rÃ©solution
 - Doublons ou images quasi-identiques
 
-✅ **GARDER UNIQUEMENT (keep=true)** si **TOUS** ces critères :
-1. Contenu technique EXPLOITABLE (plan, schéma, pictogramme, diagramme)
-2. Lisibilité EXCELLENTE (texte/légendes lisibles, contraste suffisant)
-3. Pertinence DIRECTE pour la sécurité/prévention du chantier
-4. Pas de doublon avec une image déjà gardée
-5. Confidence ≥ 0.80 (sinon rejeter)
+âœ… **GARDER UNIQUEMENT (keep=true)** si **TOUS** ces critÃ¨res :
+1. Contenu technique EXPLOITABLE (plan, schÃ©ma, pictogramme, diagramme)
+2. LisibilitÃ© EXCELLENTE (texte/lÃ©gendes lisibles, contraste suffisant)
+3. Pertinence DIRECTE pour la sÃ©curitÃ©/prÃ©vention du chantier
+4. Pas de doublon avec une image dÃ©jÃ  gardÃ©e
+5. Confidence â‰¥ 0.80 (sinon rejeter)
 
 **LIMITES STRICTES** :
-- Maximum 2 images par catégorie (choisir les 2 meilleures)
-- Si doute sur l'utilité : REJETER (principe de précaution)
+- Maximum 2 images par catÃ©gorie (choisir les 2 meilleures)
+- Si doute sur l'utilitÃ© : REJETER (principe de prÃ©caution)
 
-**Catégories** :
-- plan_circulation (PICH) → Annexe A + insertion section "Circulation"
-- plan_levage → Annexe B + insertion section "Levage"
-- plan_reseaux (DICT/DT) → Annexe C (mention seulement dans corps)
-- securite_secours (évacuation/DAE) → insertion section "Secours"
-- chimique_fds (CLP/FDS) → Annexe D (liste produits + renvoi)
-- autres : rejeter sauf si indispensable (confidence ≥ 0.90)
+**CatÃ©gories** :
+- plan_circulation (PICH) â†’ Annexe A + insertion section "Circulation"
+- plan_levage â†’ Annexe B + insertion section "Levage"
+- plan_reseaux (DICT/DT) â†’ Annexe C (mention seulement dans corps)
+- securite_secours (Ã©vacuation/DAE) â†’ insertion section "Secours"
+- chimique_fds (CLP/FDS) â†’ Annexe D (liste produits + renvoi)
+- autres : rejeter sauf si indispensable (confidence â‰¥ 0.90)
 
 Contexte projet : {context}
 
@@ -1449,9 +1534,9 @@ PEEK_SYSTEM = (
 )
 PEEK_USER_INSTRUCTIONS = ("""\
 Objectif: RENVOIE STRICTEMENT {"keep_pages":[...]} (1-based).
-- Garde UNIQUEMENT : plans circulation/PICH, levage/manutention, réseaux (DICT/DT), évacuation/DAE, FDS/CLP lisibles.
-- EXCLURE : couvertures, sommaires, tableaux administratifs sans schémas, logos/filigranes, gabarits/fonds, pages vides ou quasi textuelles.
-- Ne renvoie que les n° de pages réellement utiles.
+- Garde UNIQUEMENT : plans circulation/PICH, levage/manutention, rÃ©seaux (DICT/DT), Ã©vacuation/DAE, FDS/CLP lisibles.
+- EXCLURE : couvertures, sommaires, tableaux administratifs sans schÃ©mas, logos/filigranes, gabarits/fonds, pages vides ou quasi textuelles.
+- Ne renvoie que les nÂ° de pages rÃ©ellement utiles.
 Exemple: {"keep_pages":[1,5,7]}
 Contexte projet: {context}
 """)
@@ -1467,7 +1552,7 @@ def _model_supports_vision() -> bool:
 
 
 def peek_pages_for_plans(pdf_path: str, thumb_max_px: int = 384, batch: int = 12) -> list[int]:
-    """Miniatures PNG base64 → LLM vision → pages à garder (1-based)."""
+    """Miniatures PNG base64 â†’ LLM vision â†’ pages Ã  garder (1-based)."""
     if not _model_supports_vision():
         try:
             doc = fitz.open(pdf_path)
@@ -1522,21 +1607,21 @@ def _rank_images_with_vision(session: Session, project_id: int, max_per_batch: i
     if not _model_supports_vision():
       return []
     
-    # récup images (via DB)
+    # rÃ©cup images (via DB)
     imgs = session.exec(
         select(AttachmentDB).where(
             AttachmentDB.project_id == project_id,
             AttachmentDB.mime_type.like("image%")
         ).order_by(AttachmentDB.created_at.asc())
     ).all()
-    # pré-filtre (taille/dim)
+    # prÃ©-filtre (taille/dim)
     candidates = []
     for r in imgs:
         try:
             if os.path.getsize(r.stored_path) < 50_000:  # >50KB
                 continue
             
-            # Vérifier dimensions minimales
+            # VÃ©rifier dimensions minimales
             from PIL import Image
             with Image.open(r.stored_path) as im:
                 w, h = im.size
@@ -1545,13 +1630,13 @@ def _rank_images_with_vision(session: Session, project_id: int, max_per_batch: i
                     continue
                 # Ratio trop bizarre = probable template
                 ratio = max(w, h) / min(w, h)
-                if ratio > 4:  # Trop allongé
+                if ratio > 4:  # Trop allongÃ©
                     continue
         except Exception:
             continue
         candidates.append(r)
 
-    # contexte léger
+    # contexte lÃ©ger
     proj = session.get(ProjectDB, project_id)
     ctx = {
         "name": proj.name, "address": proj.address,
@@ -1559,7 +1644,7 @@ def _rank_images_with_vision(session: Session, project_id: int, max_per_batch: i
     }
 
     results = []
-    # batching pour éviter payload monstre
+    # batching pour Ã©viter payload monstre
     for i in range(0, len(candidates), max_per_batch):
         batch = candidates[i:i+max_per_batch]
         content = [{"type": "text",
@@ -1570,7 +1655,7 @@ def _rank_images_with_vision(session: Session, project_id: int, max_per_batch: i
             content.append({"type": "text", "text": f"filename: {r.filename}"})
 
         resp = client.chat.completions.create(
-            model=OPENROUTER_DEFAULT_MODEL,  # ⚠️ doit être un modèle vision
+            model=OPENROUTER_DEFAULT_MODEL,  # âš ï¸ doit Ãªtre un modÃ¨le vision
             temperature=0,
             messages=[
                 {"role": "system", "content": IMG_RANKER_SYSTEM},
@@ -1584,7 +1669,7 @@ def _rank_images_with_vision(session: Session, project_id: int, max_per_batch: i
             # si pas JSON, on ignore ce batch
             continue
 
-    # borne par catégorie (évite le spam)
+    # borne par catÃ©gorie (Ã©vite le spam)
     caps = {"plan_circulation": 2, "plan_levage": 2, "plan_reseaux": 3, "securite_secours": 2, "chimique_fds": 3, "autres": 1}
     counts = {k:0 for k in caps}
     shortlisted = []
@@ -1669,7 +1754,7 @@ def get_document(doc_id: int, session: Session = Depends(get_session)):
 
 def _add_cover_page(doc, project_name: str, project_address: str):
     """
-    Ajoute une belle page de garde au début du document.
+    Ajoute une belle page de garde au dÃ©but du document.
     """
     # Paragraphe vide pour espacer
     doc.add_paragraph()
@@ -1687,7 +1772,7 @@ def _add_cover_page(doc, project_name: str, project_address: str):
     # SOUS-TITRE
     subtitle = doc.add_paragraph()
     subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run = subtitle.add_run("Plan Particulier de Sécurité et de Protection de la Santé")
+    run = subtitle.add_run("Plan Particulier de SÃ©curitÃ© et de Protection de la SantÃ©")
     run.font.size = Pt(18)
     run.font.color.rgb = RGBColor(100, 116, 139)  # Gris
     
@@ -1715,7 +1800,7 @@ def _add_cover_page(doc, project_name: str, project_address: str):
     # DATE
     date_para = doc.add_paragraph()
     date_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run = date_para.add_run(f"Document généré le {datetime.now().strftime('%d/%m/%Y')}")
+    run = date_para.add_run(f"Document gÃ©nÃ©rÃ© le {datetime.now().strftime('%d/%m/%Y')}")
     run.font.size = Pt(11)
     run.font.italic = True
     
@@ -1726,23 +1811,23 @@ def _add_cover_page(doc, project_name: str, project_address: str):
 @app.get("/documents/{doc_id}/export_docx")
 def export_docx_by_id(doc_id: int, session: Session = Depends(get_session), user: UserDB = Depends(require_login)):
     """
-    Exporte le DOCX généré depuis le template.
-    Récupère le fichier DOCX sauvegardé lors de la génération.
+    Exporte le DOCX gÃ©nÃ©rÃ© depuis le template.
+    RÃ©cupÃ¨re le fichier DOCX sauvegardÃ© lors de la gÃ©nÃ©ration.
     """
     doc = ensure_doc_is_owned(doc_id, user, session)
     proj = session.get(ProjectDB, doc.project_id)
     
     # Extraire le chemin du DOCX depuis content_md
-    # Format : "[DOCX généré : /path/to/file.docx]"
+    # Format : "[DOCX gÃ©nÃ©rÃ© : /path/to/file.docx]"
     import re
-    match = re.search(r'\[DOCX généré : (.+?)\]', doc.content_md or '')
+    match = re.search(r'\[DOCX gÃ©nÃ©rÃ© : (.+?)\]', doc.content_md or '')
     
     if match:
-        # Nouveau système : DOCX déjà généré
+        # Nouveau systÃ¨me : DOCX dÃ©jÃ  gÃ©nÃ©rÃ©
         docx_path = match.group(1)
         
         if os.path.exists(docx_path):
-            # Retourner le DOCX sauvegardé
+            # Retourner le DOCX sauvegardÃ©
             filename = f"PPSPS_{proj.name.replace(' ', '_')}_{doc.version}.docx"
             headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
             
@@ -1756,9 +1841,9 @@ def export_docx_by_id(doc_id: int, session: Session = Depends(get_session), user
                 headers=headers
             )
         else:
-            raise HTTPException(status_code=404, detail="DOCX généré introuvable sur le serveur")
+            raise HTTPException(status_code=404, detail="DOCX gÃ©nÃ©rÃ© introuvable sur le serveur")
     
-    # Ancien système (fallback) : reconstruire depuis Markdown
+    # Ancien systÃ¨me (fallback) : reconstruire depuis Markdown
     else:
         d = DocxDocument()
         _build_doc_styles(d)
@@ -1781,7 +1866,7 @@ def export_docx_by_id(doc_id: int, session: Session = Depends(get_session), user
         section = d.sections[-1]
         footer = section.footer
         p = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
-        p.text = f"PPSPS - {proj.name} - Généré le {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+        p.text = f"PPSPS - {proj.name} - GÃ©nÃ©rÃ© le {datetime.now().strftime('%d/%m/%Y %H:%M')}"
         
         bio = BytesIO()
         d.save(bio)
@@ -1825,7 +1910,7 @@ def _extract_images_from_docx(docx_path: str, out_dir: str) -> list[str]:
                         im.convert("RGB").save(fp, "PNG")
                         out.append(fp)
                     except Exception:
-                        # si déjà PNG/JPG lisible, on écrit tel quel
+                        # si dÃ©jÃ  PNG/JPG lisible, on Ã©crit tel quel
                         with open(fp, "wb") as f: f.write(data)
                         out.append(fp)
         return out
@@ -1833,7 +1918,7 @@ def _extract_images_from_docx(docx_path: str, out_dir: str) -> list[str]:
         return []
 
 def _extract_images_from_pdf(pdf_path: str, out_dir: str, keep_pages: list[int] | None = None) -> list[tuple[str,int]]:
-    """Extrait les images intégrées pour les pages autorisées. Snapshot HD seulement si aucune image intégrée."""
+    """Extrait les images intÃ©grÃ©es pour les pages autorisÃ©es. Snapshot HD seulement si aucune image intÃ©grÃ©e."""
     out = []
     try:
         doc = fitz.open(pdf_path)
@@ -1861,13 +1946,13 @@ def _extract_images_from_pdf(pdf_path: str, out_dir: str, keep_pages: list[int] 
 
 
 def _ensure_annexes_with_images(md: str, img_catalog: list[dict]) -> str:
-    # si des [IMAGE:...] existent déjà, on ne touche pas
+    # si des [IMAGE:...] existent dÃ©jÃ , on ne touche pas
     if IMAGE_BLOCK_RE.search(md or ""):
         return md
     if not img_catalog:
         return md
 
-    # groupe simple par tags → Annexe A/B/C/D/E
+    # groupe simple par tags â†’ Annexe A/B/C/D/E
     groups = {"A": [], "B": [], "C": [], "D": [], "E": []}
     for it in img_catalog:
         f = it.get("file") or ""
@@ -1876,18 +1961,18 @@ def _ensure_annexes_with_images(md: str, img_catalog: list[dict]) -> str:
         elif "plan_levage" in tags: groups["B"].append(f)
         elif "plan_reseaux" in tags: groups["C"].append(f)
         else:
-            # met le reste en D par défaut (FDS / divers)
+            # met le reste en D par dÃ©faut (FDS / divers)
             groups["D"].append(f)
 
     annexes_lines = ["\n\n# Annexes\n"]
     order = [("A", "Plan de circulation / PICH"),
              ("B", "Plan de levage / manutention"),
-             ("C", "Plans réseaux / DICT-DT"),
+             ("C", "Plans rÃ©seaux / DICT-DT"),
              ("D", "FDS / documents divers"),
-             ("E", "VGP / échafaudages")]
+             ("E", "VGP / Ã©chafaudages")]
     for key, title in order:
         imgs = groups[key]
-        annexes_lines.append(f"## Annexe {key} — {title}")
+        annexes_lines.append(f"## Annexe {key} â€” {title}")
         if imgs:
             for f in imgs:
                 annexes_lines.append(f"[IMAGE:{f}]")
@@ -1898,7 +1983,7 @@ def _ensure_annexes_with_images(md: str, img_catalog: list[dict]) -> str:
 
 
 # =====================================================================
-#                             INGEST / FACTS LÉGERS
+#                             INGEST / FACTS LÃ‰GERS
 # =====================================================================
 @app.post("/projects/{project_id}/facts")
 def upsert_project_facts(project_id: int, data: ProjectFactsIn, session: Session = Depends(get_session)):
@@ -1954,7 +2039,7 @@ def _docx_add_heading_or_paragraph(doc, line: str):
         return
     if s.startswith("# "):
         txt = s[2:].strip()
-        # saut de page si H1 numéroté >= 2
+        # saut de page si H1 numÃ©rotÃ© >= 2
         if re.match(r"^\d\.", txt) and not txt.startswith("1."):
             doc.add_page_break()
         p = doc.add_heading(txt, level=1)
@@ -1963,14 +2048,14 @@ def _docx_add_heading_or_paragraph(doc, line: str):
         doc.add_heading(s[3:].strip(), level=2)
     elif s.startswith("### "):
         doc.add_heading(s[4:].strip(), level=3)
-    elif s == "---":  # Skip les séparateurs markdown
+    elif s == "---":  # Skip les sÃ©parateurs markdown
         return
     else:
         doc.add_paragraph(line)
 
 
 # =====================================================================
-#                KB Modes opératoires — Fallback texte
+#                KB Modes opÃ©ratoires â€” Fallback texte
 # =====================================================================
 def _load_kb_modes_texts(base_dir: str = "app/kb/mesures") -> dict[str, str]:
     out = {}
@@ -1983,7 +2068,7 @@ def _load_kb_modes_texts(base_dir: str = "app/kb/mesures") -> dict[str, str]:
     return out
 
 KB_MAP = {
-    # matériaux / substances
+    # matÃ©riaux / substances
     "amiante": "amiante_plomb",
     "plomb": "amiante_plomb",
     "fibrociment": "amiante_plomb",
@@ -1992,7 +2077,7 @@ KB_MAP = {
     "bruit": "bruit",
     "sonore": "bruit",
 
-    # travaux à chaud
+    # travaux Ã  chaud
     "chaud": "chaud",
     "soud": "chaud",
     "meul": "chaud",
@@ -2003,7 +2088,7 @@ KB_MAP = {
     "chim": "chimique",
     "solvant": "chimique",
     "acide": "chimique",
-    "résine": "chimique",
+    "rÃ©sine": "chimique",
     "colle": "chimique",
 
     # circulation (interne / externe)
@@ -2013,41 +2098,41 @@ KB_MAP = {
     "public": "circulation_externe",
     "livraison": "circulation_externe",
 
-    # espaces confinés
+    # espaces confinÃ©s
     "confin": "confinement",
     "cuve": "confinement",
     "regard": "confinement",
-    "réseau": "confinement",
+    "rÃ©seau": "confinement",
 
-    # électricité
-    "élec": "electrique",
+    # Ã©lectricitÃ©
+    "Ã©lec": "electrique",
     "elec": "electrique",
     "tgbt": "electrique",
     "tableau": "electrique",
     "consign": "electrique",
     "vat": "electrique",
-    "câbl": "electrique",
+    "cÃ¢bl": "electrique",
 
     # environnement
     "environ": "environnement",
-    "déchet": "environnement",
+    "dÃ©chet": "environnement",
     "pollution": "environnement",
     "rejet": "environnement",
 
     # hauteur / travail en hauteur
     "hauteur": "hauteur",
     "toiture": "hauteur",
-    "étanch": "hauteur",
+    "Ã©tanch": "hauteur",
     "etanch": "hauteur",
     "chute": "hauteur",
-    "acrotère": "hauteur",
+    "acrotÃ¨re": "hauteur",
     "echaf": "hauteur",
 
-    # hygiène/base-vie
+    # hygiÃ¨ne/base-vie
     "hyg": "hygiene",
     "sanit": "hygiene",
     "vestiaire": "hygiene",
-    "réfect": "hygiene",
+    "rÃ©fect": "hygiene",
 
     # incendie/explosion
     "incend": "incendie_explosion",
@@ -2058,7 +2143,7 @@ KB_MAP = {
     "levage": "levage",
     "grue": "levage",
     "palonnier": "levage",
-    "éling": "levage",
+    "Ã©ling": "levage",
 
     # manutention
     "manut": "manutention",
@@ -2074,7 +2159,7 @@ KB_MAP = {
 
 def _render_modes_ops_from_kb(project: ProjectDB) -> str:
     """
-    Construit un bloc 'Modes opératoires' à partir de la KB si on n'a rien détecté dans les pièces.
+    Construit un bloc 'Modes opÃ©ratoires' Ã  partir de la KB si on n'a rien dÃ©tectÃ© dans les piÃ¨ces.
     """
     kb_texts = _load_kb_modes_texts()
     if not kb_texts:
@@ -2082,7 +2167,7 @@ def _render_modes_ops_from_kb(project: ProjectDB) -> str:
 
     def _norm(s: str) -> str:
         s = (s or "").lower()
-        rep = str.maketrans("áàâäãéèêëíìîïóòôöõúùûüç", "aaaaaeeeeiiiiooooouuuuc")
+        rep = str.maketrans("Ã¡Ã Ã¢Ã¤Ã£Ã©Ã¨ÃªÃ«Ã­Ã¬Ã®Ã¯Ã³Ã²Ã´Ã¶ÃµÃºÃ¹Ã»Ã¼Ã§", "aaaaaeeeeiiiiooooouuuuc")
         return s.translate(rep)
 
     tokens = set()
@@ -2101,7 +2186,7 @@ def _render_modes_ops_from_kb(project: ProjectDB) -> str:
     if not chosen_keys:
         return ""
 
-    parts = ["**3. Modes opératoires**", ""]
+    parts = ["**3. Modes opÃ©ratoires**", ""]
     for key in chosen_keys:
         title = key.replace("_", " ").capitalize()
         body = kb_texts.get(key, "").strip()
@@ -2113,7 +2198,7 @@ def _render_modes_ops_from_kb(project: ProjectDB) -> str:
 
 
 def _build_doc_styles(doc):
-    # police/parag défaut - Aptos moderne et lisible
+    # police/parag dÃ©faut - Aptos moderne et lisible
     styles = doc.styles
     normal = styles["Normal"]
     normal.font.name = "Aptos"
@@ -2127,7 +2212,7 @@ def _build_doc_styles(doc):
     h1.font.name = "Aptos"
     h1.font.size = Pt(18)
     h1.font.bold = True
-    h1.font.color.rgb = RGBColor(31, 73, 125)  # Bleu foncé pro
+    h1.font.color.rgb = RGBColor(31, 73, 125)  # Bleu foncÃ© pro
     h1.paragraph_format.space_before = Pt(12)
     h1.paragraph_format.space_after = Pt(6)
 
@@ -2149,17 +2234,17 @@ def _build_doc_styles(doc):
     h3.paragraph_format.space_after = Pt(3)
 
 def _row_cant_split(row):
-    # <w:cantSplit/> sur la ligne => évite coupure sur page
+    # <w:cantSplit/> sur la ligne => Ã©vite coupure sur page
     tr = row._tr
     trPr = tr.get_or_add_trPr()
     cant = OxmlElement('w:cantSplit')
     trPr.append(cant)
 
 def _format_table_pretty(tbl, header_fill=True):
-    """Version améliorée avec couleurs."""
+    """Version amÃ©liorÃ©e avec couleurs."""
     tbl.alignment = WD_TABLE_ALIGNMENT.LEFT
     
-    # En-tête avec fond bleu
+    # En-tÃªte avec fond bleu
     if len(tbl.rows) > 0:
         for j, cell in enumerate(tbl.rows[0].cells):
             for p in cell.paragraphs:
@@ -2173,14 +2258,14 @@ def _format_table_pretty(tbl, header_fill=True):
                 shd.set(qn('w:fill'), '2563EB')  # Bleu
                 tcPr.append(shd)
     
-    # Lignes alternées (gris très clair)
+    # Lignes alternÃ©es (gris trÃ¨s clair)
     for i, row in enumerate(tbl.rows[1:], start=1):
         if i % 2 == 0:
             for cell in row.cells:
                 tcPr = cell._tc.get_or_add_tcPr()
                 shd = OxmlElement('w:shd')
                 shd.set(qn('w:val'), 'clear')
-                shd.set(qn('w:fill'), 'F8FAFC')  # Gris très clair
+                shd.set(qn('w:fill'), 'F8FAFC')  # Gris trÃ¨s clair
                 tcPr.append(shd)
     
     # Anti-coupure lignes
@@ -2216,7 +2301,7 @@ def _maybe_add_images(doc, text_block: str, base_dir: str | None = None, image_l
             except Exception as e:
                 logger.warning(f"[IMG] Impossible de lire l'image {img_ref}: {e}")
         else:
-            logger.warning(f"[IMG] Image introuvable, skippée: {img_ref}")
+            logger.warning(f"[IMG] Image introuvable, skippÃ©e: {img_ref}")
 
         pos = m.end()
 
@@ -2239,7 +2324,7 @@ def _build_image_catalog(session: Session, project_id: int) -> list[dict]:
             tag = []
             if "circul" in name_l or "pich" in name_l: tag.append("plan_circulation")
             if "levage" in name_l or "grue" in name_l: tag.append("plan_levage")
-            if "dict" in name_l or "reseau" in name_l or "réseau" in name_l: tag.append("plan_reseaux")
+            if "dict" in name_l or "reseau" in name_l or "rÃ©seau" in name_l: tag.append("plan_reseaux")
             out.append({
                 "file": r.filename,
                 "stored_path": r.stored_path,
@@ -2254,13 +2339,13 @@ def _build_image_catalog(session: Session, project_id: int) -> list[dict]:
 # =====================================================================
 
 _MO_HINT_WORDS = (
-    "mode opératoire", "procédure", "étapes", "balisage", "consignation",
-    "échafaudage", "levage", "EPI", "sécurité", "travaux à chaud", "électricité"
+    "mode opÃ©ratoire", "procÃ©dure", "Ã©tapes", "balisage", "consignation",
+    "Ã©chafaudage", "levage", "EPI", "sÃ©curitÃ©", "travaux Ã  chaud", "Ã©lectricitÃ©"
 )
 
 def _scan_mo_candidates(blob: str, window_words: int = 220) -> list[str]:
     """
-    Récupère des extraits candidats aux MOs autour de mots-clés.
+    RÃ©cupÃ¨re des extraits candidats aux MOs autour de mots-clÃ©s.
     """
     if not blob:
         return []
@@ -2284,22 +2369,22 @@ def _scan_mo_candidates(blob: str, window_words: int = 220) -> list[str]:
     return hits[:6]
 
 TRAME_TITLES = [
-    "1. Informations générales",
+    "1. Informations gÃ©nÃ©rales",
     "1.1 Affaire",
     "1.2 Chantier",
-    "1.3 Acteurs & coordonnées",
-    "1.4 Planning / durée / dates",
+    "1.3 Acteurs & coordonnÃ©es",
+    "1.4 Planning / durÃ©e / dates",
     "1.5 Effectifs / horaires",
-    "1.6 Intervenants / Sous-traitants / matériel",
-    "1.7 Installations, hygiène & conditions de travail",
+    "1.6 Intervenants / Sous-traitants / matÃ©riel",
+    "1.7 Installations, hygiÃ¨ne & conditions de travail",
     "2. Organisation du chantier",
-    "2.1 Accès, circulation, balisage",
+    "2.1 AccÃ¨s, circulation, balisage",
     "2.2 Installations techniques / base vie / sanitaires",
-    "2.3 Conditions de travail & hygiène",
-    "3. Modes opératoires",
-    "4. Prévention / EPI / Risques",
-    "5. Secours & évacuation",
-    "6. Mise à jour / révisions du PPSPS",
+    "2.3 Conditions de travail & hygiÃ¨ne",
+    "3. Modes opÃ©ratoires",
+    "4. PrÃ©vention / EPI / Risques",
+    "5. Secours & Ã©vacuation",
+    "6. Mise Ã  jour / rÃ©visions du PPSPS",
     "7. Diffusion, consultation & conservation",
 ]
 
@@ -2338,16 +2423,16 @@ def _build_evidence_pack(blob: str, project: ProjectDB) -> str:
         blob = ""
     mos = _scan_mo_candidates(blob)
     lines = []
-    lines.append("## Extraits — Informations générales\n")
+    lines.append("## Extraits â€” Informations gÃ©nÃ©rales\n")
     lines.append(blob[:6000])
-    lines.append("\n\n## Extraits — Planning / Durée / Dates\n")
+    lines.append("\n\n## Extraits â€” Planning / DurÃ©e / Dates\n")
     lines.append(blob[6000:12000])
-    lines.append("\n\n## Extraits — Effectifs / Sous-traitants / Matériel\n")
+    lines.append("\n\n## Extraits â€” Effectifs / Sous-traitants / MatÃ©riel\n")
     lines.append(blob[12000:18000])
-    lines.append("\n\n## Extraits — Conditions de travail / Hygiène / Installations\n")
+    lines.append("\n\n## Extraits â€” Conditions de travail / HygiÃ¨ne / Installations\n")
     lines.append(blob[18000:24000])
     if mos:
-        lines.append("\n\n## Extraits — Candidats Modes opératoires\n")
+        lines.append("\n\n## Extraits â€” Candidats Modes opÃ©ratoires\n")
         for m in mos:
             lines.append(f"- {m}\n")
     return "\n".join(lines).strip()
@@ -2355,169 +2440,169 @@ def _build_evidence_pack(blob: str, project: ProjectDB) -> str:
 def _prompt_freeform_ppsps(meta_hint: dict, evidence_pack: str, img_catalog: list[dict], kb_fallback_present: bool = True) -> list[dict]:
 
     """
-    Construit les messages pour l'appel modèle (chat.completions).
+    Construit les messages pour l'appel modÃ¨le (chat.completions).
     """
     TRAME_MD = """\
-# 1. Informations générales
+# 1. Informations gÃ©nÃ©rales
 ## 1.1 Affaire
 ## 1.2 Chantier
-## 1.3 Acteurs & coordonnées
-## 1.4 Planning / durée / dates
+## 1.3 Acteurs & coordonnÃ©es
+## 1.4 Planning / durÃ©e / dates
 ## 1.5 Effectifs / horaires
-## 1.6 Intervenants / Sous-traitants / matériel
-## 1.7 Installations, hygiène & conditions de travail
+## 1.6 Intervenants / Sous-traitants / matÃ©riel
+## 1.7 Installations, hygiÃ¨ne & conditions de travail
 
 # 2. Organisation du chantier
-## 2.1 Accès, circulation, balisage
+## 2.1 AccÃ¨s, circulation, balisage
 ## 2.2 Installations techniques / base vie / sanitaires
-## 2.3 Conditions de travail & hygiène
+## 2.3 Conditions de travail & hygiÃ¨ne
 
-# 3. Modes opératoires
+# 3. Modes opÃ©ratoires
 
-# 4. Prévention / EPI / Risques
+# 4. PrÃ©vention / EPI / Risques
 
-# 5. Secours & évacuation
+# 5. Secours & Ã©vacuation
 
-# 6. Mise à jour / révisions du PPSPS
+# 6. Mise Ã  jour / rÃ©visions du PPSPS
 
 # 7. Diffusion, consultation & conservation
 """
 
     RULES = f"""
-Tu es **rédacteur PPSPS expert**.
-Objectif : produire un **PPSPS complet en français**, **au format Markdown**, qui respecte **strictement** la trame ci-dessous.
+Tu es **rÃ©dacteur PPSPS expert**.
+Objectif : produire un **PPSPS complet en franÃ§ais**, **au format Markdown**, qui respecte **strictement** la trame ci-dessous.
 
-🚨 **RÈGLE ABSOLUE N°1 — PRIORITÉ DES SOURCES** 🚨
-1. **TOUJOURS utiliser EN PRIORITÉ les informations des PIÈCES UPLOADÉES** (extraits fournis ci-dessous)
-2. Le **formulaire** sert UNIQUEMENT de **FALLBACK** si l'info est absente des pièces
-3. Si une entreprise/date/coordonnée est trouvée dans les pièces, ajoute la en plus des entreprises inscrites dans le formulaire sauf si tu reconnais le même nom d'entreprises.
+ðŸš¨ **RÃˆGLE ABSOLUE NÂ°1 â€” PRIORITÃ‰ DES SOURCES** ðŸš¨
+1. **TOUJOURS utiliser EN PRIORITÃ‰ les informations des PIÃˆCES UPLOADÃ‰ES** (extraits fournis ci-dessous)
+2. Le **formulaire** sert UNIQUEMENT de **FALLBACK** si l'info est absente des piÃ¨ces
+3. Si une entreprise/date/coordonnÃ©e est trouvÃ©e dans les piÃ¨ces, ajoute la en plus des entreprises inscrites dans le formulaire sauf si tu reconnais le mÃªme nom d'entreprises.
 **Structure & Style**
-- Respecte les titres/numéros EXACTS de la trame (ne change rien)
+- Respecte les titres/numÃ©ros EXACTS de la trame (ne change rien)
 - Si une info est introuvable : laisse vide
 - Style : factuel, professionnel, concis
-- Pas d'inventions : utilise uniquement les données réelles
+- Pas d'inventions : utilise uniquement les donnÃ©es rÃ©elles
 
-**TABLEAUX — FORMAT CSV OBLIGATOIRE**
+**TABLEAUX â€” FORMAT CSV OBLIGATOIRE**
 Pour chaque tableau, utilise EXACTEMENT ce format :
 
 [TABLE:<Nom de section>]
 "Col1";"Col2";"Col3"
-"données";"données";"données"
+"donnÃ©es";"donnÃ©es";"donnÃ©es"
 [/TABLE]
 
-- Point-virgule `;` comme séparateur
+- Point-virgule `;` comme sÃ©parateur
 - Guillemets `"` autour de chaque cellule
 - Si info manquante : laisse vide
 
-Tableaux requis (en-têtes EXACTS) :
-  [TABLE:1.3 Acteurs & coordonnées] "Acteur";"Société";"Nom";"Email";"Téléphone" [/TABLE]
-  [TABLE:1.4 Planning] "Phase";"Activité";"Pré-requis";"Début";"Fin";"Responsable" [/TABLE]
-  [TABLE:1.5 Effectifs] "Corps d'état";"Effectif max";"Habilitations";"Période" [/TABLE]
-  [TABLE:1.6 Sous-traitants] "Entreprise";"Lot";"Responsable";"Contact";"Effectif";"Période";"Docs CSPS" [/TABLE]
-  [TABLE:1.6 Matériel] "Matériel";"Caractéristiques";"VGP/Docs";"Responsable";"Période" [/TABLE]
-  [TABLE:4. Prévention / EPI / Risques] "Risque";"Gravité";"Probabilité";"Criticité initiale";"Mesures";"Criticité résiduelle" [/TABLE]
-  [TABLE:5. Secours & évacuation] "Rôle";"Qui";"Contact";"Back-up" [/TABLE]
-  [TABLE:6. Mise à jour / révisions du PPSPS] "Index";"Date";"Motif";"Sections impactées";"Diffusion effectuée" [/TABLE]
+Tableaux requis (en-tÃªtes EXACTS) :
+  [TABLE:1.3 Acteurs & coordonnÃ©es] "Acteur";"SociÃ©tÃ©";"Nom";"Email";"TÃ©lÃ©phone" [/TABLE]
+  [TABLE:1.4 Planning] "Phase";"ActivitÃ©";"PrÃ©-requis";"DÃ©but";"Fin";"Responsable" [/TABLE]
+  [TABLE:1.5 Effectifs] "Corps d'Ã©tat";"Effectif max";"Habilitations";"PÃ©riode" [/TABLE]
+  [TABLE:1.6 Sous-traitants] "Entreprise";"Lot";"Responsable";"Contact";"Effectif";"PÃ©riode";"Docs CSPS" [/TABLE]
+  [TABLE:1.6 MatÃ©riel] "MatÃ©riel";"CaractÃ©ristiques";"VGP/Docs";"Responsable";"PÃ©riode" [/TABLE]
+  [TABLE:4. PrÃ©vention / EPI / Risques] "Risque";"GravitÃ©";"ProbabilitÃ©";"CriticitÃ© initiale";"Mesures";"CriticitÃ© rÃ©siduelle" [/TABLE]
+  [TABLE:5. Secours & Ã©vacuation] "RÃ´le";"Qui";"Contact";"Back-up" [/TABLE]
+  [TABLE:6. Mise Ã  jour / rÃ©visions du PPSPS] "Index";"Date";"Motif";"Sections impactÃ©es";"Diffusion effectuÃ©e" [/TABLE]
 
-**INSERTION D'IMAGES — RÈGLES STRICTES**
+**INSERTION D'IMAGES â€” RÃˆGLES STRICTES**
 
-✅ **Images dans le CORPS du document** :
-- Section "Secours & évacuation" : 1 plan évacuation [cat=securite_secours]
-  Format : **Figure 1 — Plan d'évacuation Zone X**
-  Légende : Points de rassemblement, issues, DAE | Source: [fichier] | Date: [si dispo]
+âœ… **Images dans le CORPS du document** :
+- Section "Secours & Ã©vacuation" : 1 plan Ã©vacuation [cat=securite_secours]
+  Format : **Figure 1 â€” Plan d'Ã©vacuation Zone X**
+  LÃ©gende : Points de rassemblement, issues, DAE | Source: [fichier] | Date: [si dispo]
   [IMAGE:nom_fichier.png]
 
 - Section "Organisation / Circulation" : 1 PICH [cat=plan_circulation]
-  Format : **Figure 2 — Plan d'installation de chantier (PICH)**
-  Légende : Accès, zones stockage, balisage | Source: [fichier]
+  Format : **Figure 2 â€” Plan d'installation de chantier (PICH)**
+  LÃ©gende : AccÃ¨s, zones stockage, balisage | Source: [fichier]
   [IMAGE:nom_fichier.png]
-  _(Voir Annexe A pour plans détaillés)_
+  _(Voir Annexe A pour plans dÃ©taillÃ©s)_
 
-- Section "Modes opératoires / Levage" : 1 schéma [cat=plan_levage]
-  Format : **Figure 3 — Schéma de levage / Zone de grutage**
-  Légende : Rayons, zones interdites | Source: [fichier]
+- Section "Modes opÃ©ratoires / Levage" : 1 schÃ©ma [cat=plan_levage]
+  Format : **Figure 3 â€” SchÃ©ma de levage / Zone de grutage**
+  LÃ©gende : Rayons, zones interdites | Source: [fichier]
   [IMAGE:nom_fichier.png]
-  _(Voir Annexe B pour détails)_
+  _(Voir Annexe B pour dÃ©tails)_
 
-- Section "Réseaux" : PAS D'IMAGE, seulement texte :
-  "Les prescriptions DICT/DT ont été intégrées. Voir plans réseaux en Annexe C."
+- Section "RÃ©seaux" : PAS D'IMAGE, seulement texte :
+  "Les prescriptions DICT/DT ont Ã©tÃ© intÃ©grÃ©es. Voir plans rÃ©seaux en Annexe C."
 
 - Section "Risques chimiques" : PAS D'IMAGE, seulement texte :
-  "Produits employés : [liste]. Voir FDS complètes en Annexe D."
+  "Produits employÃ©s : [liste]. Voir FDS complÃ¨tes en Annexe D."
 
-📎 **ANNEXES (À LA FIN DU DOCUMENT)** :
+ðŸ“Ž **ANNEXES (Ã€ LA FIN DU DOCUMENT)** :
 
 # Annexes
 
-## Annexe A — Plans de circulation et PICH
+## Annexe A â€” Plans de circulation et PICH
 
 **IMPORTANT** : Utilise UNIQUEMENT les noms de fichiers du catalogue fourni (section IMAGE_CATALOG).
-Si aucune image [cat=plan_circulation] disponible, écrire : "Aucun document fourni"
+Si aucune image [cat=plan_circulation] disponible, Ã©crire : "Aucun document fourni"
 
 Exemple de format SI des images existent :
 [IMAGE:nom_reel_du_fichier.png]
-**Plan PICH — Vue générale**
+**Plan PICH â€” Vue gÃ©nÃ©rale**
 Source: [nom fichier] | Date: [si dispo]
 
-## Annexe B — Plans de levage et manutention
+## Annexe B â€” Plans de levage et manutention
 
-Si des images [cat=plan_levage] existent dans le catalogue, les insérer.
+Si des images [cat=plan_levage] existent dans le catalogue, les insÃ©rer.
 Sinon : "Aucun document fourni"
 
-## Annexe C — Plans de réseaux (DICT/DT)
+## Annexe C â€” Plans de rÃ©seaux (DICT/DT)
 
-Si des images [cat=plan_reseaux] existent dans le catalogue, les insérer.
+Si des images [cat=plan_reseaux] existent dans le catalogue, les insÃ©rer.
 Sinon : "Aucun document fourni"
 
-## Annexe D — Fiches de Données de Sécurité (FDS)
+## Annexe D â€” Fiches de DonnÃ©es de SÃ©curitÃ© (FDS)
 
-Si des images [cat=chimique_fds] existent dans le catalogue, les insérer.
+Si des images [cat=chimique_fds] existent dans le catalogue, les insÃ©rer.
 Sinon : "Aucun document fourni"
 
-## Annexe E — Documents complémentaires
+## Annexe E â€” Documents complÃ©mentaires
 
-Laisser vide ou mentionner si VGP/échafaudages fournis.
+Laisser vide ou mentionner si VGP/Ã©chafaudages fournis.
 
-🚨 **RÈGLES CRITIQUES IMAGES** :
-- N'utilise QUE les noms de fichiers présents dans IMAGE_CATALOG fourni ci-dessous
+ðŸš¨ **RÃˆGLES CRITIQUES IMAGES** :
+- N'utilise QUE les noms de fichiers prÃ©sents dans IMAGE_CATALOG fourni ci-dessous
 - NE PAS inventer de noms comme "pich_1.png", "levage_1.png" etc.
-- Si IMAGE_CATALOG est vide ou n'a pas d'images pour une catégorie → écrire "Aucun document fourni"
+- Si IMAGE_CATALOG est vide ou n'a pas d'images pour une catÃ©gorie â†’ Ã©crire "Aucun document fourni"
 - Format exact : [IMAGE:nom_exact_du_fichier_du_catalogue.png]
 
-**Modes opératoires**
-- Si MOs détectés dans extraits : les réécrire proprement (Étapes, EPI, Prévention, Points de contrôle)
-- Sinon, les déduire des travaux à réaliser
+**Modes opÃ©ratoires**
+- Si MOs dÃ©tectÃ©s dans extraits : les rÃ©Ã©crire proprement (Ã‰tapes, EPI, PrÃ©vention, Points de contrÃ´le)
+- Sinon, les dÃ©duire des travaux Ã  rÃ©aliser
 """
 
 
 
     messages = [
-        {"role": "system", "content": "Tu es un expert prévention SPS qui rédige des PPSPS conformes et rigoureux."},
+        {"role": "system", "content": "Tu es un expert prÃ©vention SPS qui rÃ©dige des PPSPS conformes et rigoureux."},
         {"role": "user", "content":
             f"{RULES}\n\n"
-            f"### TRAME À RESPECTER (NE RIEN MODIFIER)\n{TRAME_MD}\n\n"
-            f"### 📄 PIÈCES UPLOADÉES (PRIORITÉ ABSOLUE)\n{evidence_pack}\n\n"
-            f"### 📝 FORMULAIRE (FALLBACK UNIQUEMENT)\n{json.dumps(meta_hint, ensure_ascii=False, indent=2)}\n\n"
-            f"### 🖼️ CATALOGUE D'IMAGES DISPONIBLES\n{json.dumps(img_catalog, ensure_ascii=False, indent=2)}\n\n"
-            f"Maintenant, génère le PPSPS complet en respectant STRICTEMENT toutes les règles ci-dessus."
+            f"### TRAME Ã€ RESPECTER (NE RIEN MODIFIER)\n{TRAME_MD}\n\n"
+            f"### ðŸ“„ PIÃˆCES UPLOADÃ‰ES (PRIORITÃ‰ ABSOLUE)\n{evidence_pack}\n\n"
+            f"### ðŸ“ FORMULAIRE (FALLBACK UNIQUEMENT)\n{json.dumps(meta_hint, ensure_ascii=False, indent=2)}\n\n"
+            f"### ðŸ–¼ï¸ CATALOGUE D'IMAGES DISPONIBLES\n{json.dumps(img_catalog, ensure_ascii=False, indent=2)}\n\n"
+            f"Maintenant, gÃ©nÃ¨re le PPSPS complet en respectant STRICTEMENT toutes les rÃ¨gles ci-dessus."
             f"\n\n### IMAGE_CATALOG (images disponibles)\n"
             f"{json.dumps(img_catalog, ensure_ascii=False)}\n"
-            f"\n\n### RÈGLES D’INSERTION D’IMAGES (Mise à jour complète)\n"
-            f"Insertion d’images (OBLIGATOIRE SI DISPONIBLE) :\n"
-            f"- \"Organisation des secours\" : insérer le plan d’évacuation [cat=securite_secours], titré \"Figure X — Plan d’évacuation (zone)\", légende (points de rassemblement/cheminements), source (fichier) et date/vers. Utiliser [IMAGE:<filename>].\n"
-            f"- \"Installations de chantier / Circulation\" : insérer le PICH principal [cat=plan_circulation], même format de titrage ; si plusieurs, n’en garder qu’1 (la plus lisible). Ajouter \"(Voir Annexe A pour détails)\".\n"
-            f"- \"Modes opératoires / Levage & manutention\" : insérer 1 visuel pertinent [cat=plan_levage], titré. Ajouter \"(Voir Annexe B pour détails)\".\n"
-            f"- \"Réseaux / DICT\" : ne pas insérer d’image ; créer un paragraphe qui dit \"Prescriptions DICT prises en compte — Voir Annexe C\".\n"
-            f"- \"Risques chimiques\" : lister les produits employés + \"Voir Annexe D\" (ne pas coller de scans FDS en corps).\n\n"
+            f"\n\n### RÃˆGLES Dâ€™INSERTION Dâ€™IMAGES (Mise Ã  jour complÃ¨te)\n"
+            f"Insertion dâ€™images (OBLIGATOIRE SI DISPONIBLE) :\n"
+            f"- \"Organisation des secours\" : insÃ©rer le plan dâ€™Ã©vacuation [cat=securite_secours], titrÃ© \"Figure X â€” Plan dâ€™Ã©vacuation (zone)\", lÃ©gende (points de rassemblement/cheminements), source (fichier) et date/vers. Utiliser [IMAGE:<filename>].\n"
+            f"- \"Installations de chantier / Circulation\" : insÃ©rer le PICH principal [cat=plan_circulation], mÃªme format de titrage ; si plusieurs, nâ€™en garder quâ€™1 (la plus lisible). Ajouter \"(Voir Annexe A pour dÃ©tails)\".\n"
+            f"- \"Modes opÃ©ratoires / Levage & manutention\" : insÃ©rer 1 visuel pertinent [cat=plan_levage], titrÃ©. Ajouter \"(Voir Annexe B pour dÃ©tails)\".\n"
+            f"- \"RÃ©seaux / DICT\" : ne pas insÃ©rer dâ€™image ; crÃ©er un paragraphe qui dit \"Prescriptions DICT prises en compte â€” Voir Annexe C\".\n"
+            f"- \"Risques chimiques\" : lister les produits employÃ©s + \"Voir Annexe D\" (ne pas coller de scans FDS en corps).\n\n"
             f"Titrage standard :\n"
-            f"- Chaque image dans le corps : \"Figure X — <Titre>\", + légende courte (zone/objet), + \"Source: <fichier>\", + \"Date/Version\" si dispo.\n\n"
+            f"- Chaque image dans le corps : \"Figure X â€” <Titre>\", + lÃ©gende courte (zone/objet), + \"Source: <fichier>\", + \"Date/Version\" si dispo.\n\n"
             f"Fallback :\n"
-            f"- Si aucune image pertinente pour une section clé (évacuation, circulation, levage) : insérer un encart \"⚠️ Plan manquant — à fournir\".\n"
-            f"- Plan de levage / manutention → **Annexe B**.\n"
-            f"- Plans réseaux / DICT/DT → **Annexe C**.\n"
-            f"- Pictos/FDS produits → **Annexe D**.\n"
-            f"- VGP/échafaudages → **Annexe E**.\n"
-            f"- Si une image semble utile en **Secours & évacuation** (point de rassemblement/DAE), insère-la dans cette section.\n"
+            f"- Si aucune image pertinente pour une section clÃ© (Ã©vacuation, circulation, levage) : insÃ©rer un encart \"âš ï¸ Plan manquant â€” Ã  fournir\".\n"
+            f"- Plan de levage / manutention â†’ **Annexe B**.\n"
+            f"- Plans rÃ©seaux / DICT/DT â†’ **Annexe C**.\n"
+            f"- Pictos/FDS produits â†’ **Annexe D**.\n"
+            f"- VGP/Ã©chafaudages â†’ **Annexe E**.\n"
+            f"- Si une image semble utile en **Secours & Ã©vacuation** (point de rassemblement/DAE), insÃ¨re-la dans cette section.\n"
             f"- Utilise **strictement** la balise `[IMAGE:<file>]` fournie dans le catalogue (ne pas renommer).\n"
 
         }
@@ -2538,7 +2623,7 @@ def _delete_project_storage(project_id: int):
 
 
 # =====================================================================
-#                   VALIDATION LÉGÈRE DU MARKDOWN
+#                   VALIDATION LÃ‰GÃˆRE DU MARKDOWN
 # =====================================================================
 
 def _ensure_sections(md: str) -> str:
@@ -2560,7 +2645,7 @@ def _ensure_sections(md: str) -> str:
 
 def _normalize_md(md: str) -> str:
     md = (md or "").strip()
-    # Remplace les fences par leur contenu (évite de casser le parseur table)
+    # Remplace les fences par leur contenu (Ã©vite de casser le parseur table)
     md = re.sub(r"```(.*?)```", lambda m: "\n" + m.group(1) + "\n", md, flags=re.DOTALL)
     return md
 
@@ -2571,14 +2656,14 @@ def _validate_and_fix_markdown(md: str) -> str:
 
 # === Tables attendues (ordre & colonnes exactes)
 EXPECTED_TABLES = {
-    "1.3 Acteurs & coordonnées": ["Acteur", "Société", "Nom", "Email", "Téléphone"],
-    "1.4 Planning": ["Phase", "Activité", "Pré-requis", "Début", "Fin", "Responsable"],
-    "1.5 Effectifs": ["Corps d’état", "Effectif max", "Habilitations", "Période"],
-    "1.6 Sous-traitants": ["Entreprise", "Lot", "Responsable", "Contact", "Effectif", "Période", "Docs CSPS"],
-    "1.6 Matériel": ["Matériel", "Caractéristiques", "VGP/Docs", "Responsable", "Période"],
-    "4. Prévention / EPI / Risques": ["Risque", "Gravité", "Probabilité", "Criticité initiale", "Mesures", "Criticité résiduelle"],
-    "5. Secours & évacuation": ["Rôle", "Qui", "Contact", "Back-up"],
-    "6. Mise à jour / révisions du PPSPS": ["Index", "Date", "Motif", "Sections impactées", "Diffusion effectuée"],
+    "1.3 Acteurs & coordonnÃ©es": ["Acteur", "SociÃ©tÃ©", "Nom", "Email", "TÃ©lÃ©phone"],
+    "1.4 Planning": ["Phase", "ActivitÃ©", "PrÃ©-requis", "DÃ©but", "Fin", "Responsable"],
+    "1.5 Effectifs": ["Corps dâ€™Ã©tat", "Effectif max", "Habilitations", "PÃ©riode"],
+    "1.6 Sous-traitants": ["Entreprise", "Lot", "Responsable", "Contact", "Effectif", "PÃ©riode", "Docs CSPS"],
+    "1.6 MatÃ©riel": ["MatÃ©riel", "CaractÃ©ristiques", "VGP/Docs", "Responsable", "PÃ©riode"],
+    "4. PrÃ©vention / EPI / Risques": ["Risque", "GravitÃ©", "ProbabilitÃ©", "CriticitÃ© initiale", "Mesures", "CriticitÃ© rÃ©siduelle"],
+    "5. Secours & Ã©vacuation": ["RÃ´le", "Qui", "Contact", "Back-up"],
+    "6. Mise Ã  jour / rÃ©visions du PPSPS": ["Index", "Date", "Motif", "Sections impactÃ©es", "Diffusion effectuÃ©e"],
 }
 
 TABLE_BLOCK_RE = re.compile(r"\[TABLE:([^\]]+)\](.*?)\[/TABLE\]", re.DOTALL)
@@ -2587,7 +2672,7 @@ IMAGE_BLOCK_RE = re.compile(r"\[IMAGE:([^\]]+)\]")
 
 def _split_text_and_tables(md: str):
     """
-    Découpe le markdown en segments:
+    DÃ©coupe le markdown en segments:
       [("text", "..."), ("table", section_name, csv_text), ...]
     """
     segs = []
@@ -2606,8 +2691,8 @@ def _split_text_and_tables(md: str):
 
 def _parse_csv_table(csv_text: str) -> list[list[str]]:
     """
-    Parse CSV (séparateur ';', guillemets obligatoires) → rows[list[str]]
-    Tolère lignes vides; strip global.
+    Parse CSV (sÃ©parateur ';', guillemets obligatoires) â†’ rows[list[str]]
+    TolÃ¨re lignes vides; strip global.
     """
     rows = []
     reader = csv.reader([l for l in csv_text.splitlines()], delimiter=';', quotechar='"')
@@ -2619,7 +2704,7 @@ def _parse_csv_table(csv_text: str) -> list[list[str]]:
 
 def _ensure_expected_header(section: str, rows: list[list[str]]) -> list[list[str]]:
     """
-    Vérifie l'en-tête; si KO, impose l'en-tête attendu et une ligne vide.
+    VÃ©rifie l'en-tÃªte; si KO, impose l'en-tÃªte attendu et une ligne vide.
     """
     expected = EXPECTED_TABLES.get(section)
     if not expected:
@@ -2636,7 +2721,7 @@ def _docx_add_csv_table(doc, section: str, csv_text: str):
     rows = _ensure_expected_header(section, rows)
     if not rows:
         return
-    # crée table Word
+    # crÃ©e table Word
     tbl = doc.add_table(rows=len(rows), cols=len(rows[0]))
     tbl.style = "Table Grid"
     for i, r in enumerate(rows):
@@ -2654,20 +2739,20 @@ def _docx_add_csv_table(doc, section: str, csv_text: str):
 def generate_ppsps_freeform(project_id: int, session: Session = Depends(get_session), 
                            user: UserDB = Depends(require_login)):
     """
-    Génère un PPSPS en utilisant le template DOCX et en le remplissant intelligemment avec l'IA.
-    Sauvegarde le DOCX généré pour export ultérieur.
+    GÃ©nÃ¨re un PPSPS en utilisant le template DOCX et en le remplissant intelligemment avec l'IA.
+    Sauvegarde le DOCX gÃ©nÃ©rÃ© pour export ultÃ©rieur.
     """
     proj = session.get(ProjectDB, project_id)
     if not proj:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    # ✅ VÉRIFIER ET CONSOMMER 1 JETON
+    # âœ… VÃ‰RIFIER ET CONSOMMER 1 JETON
     try:
         TokenService.use_token(
             session=session,
             user_id=user.id,
             project_id=project_id,
-            description=f"Génération PPSPS - {proj.name}"
+            description=f"GÃ©nÃ©ration PPSPS - {proj.name}"
         )
     except InsufficientTokensError as e:
         raise HTTPException(
@@ -2679,7 +2764,7 @@ def generate_ppsps_freeform(project_id: int, session: Session = Depends(get_sess
             }
         )
     
-    # ✅ VÉRIFIER LA PERTINENCE DES FICHIERS AVEC L'IA
+    # âœ… VÃ‰RIFIER LA PERTINENCE DES FICHIERS AVEC L'IA
     is_relevant, relevance_message = _check_files_relevance_with_ai(session, project_id)
 
     if not is_relevant:
@@ -2694,7 +2779,7 @@ def generate_ppsps_freeform(project_id: int, session: Session = Depends(get_sess
     if relevance_message:
         logger.warning(f"[PPSPS] {relevance_message}")
     
-    # Récupération des images
+    # RÃ©cupÃ©ration des images
     all_images = session.exec(
         select(AttachmentDB).where(
             AttachmentDB.project_id == project_id,
@@ -2713,12 +2798,12 @@ def generate_ppsps_freeform(project_id: int, session: Session = Depends(get_sess
     
     logger.info(f"[IMG] {len(img_catalog)} images disponibles pour le projet {project_id}")
 
-    # Evidence depuis les pièces
+    # Evidence depuis les piÃ¨ces
     blob = _project_text_blob(session, project_id, limit_chars=80_000)
     evidence = _build_evidence_pack(blob, proj)
     meta_hint = _build_meta_hint(proj)
 
-    # Vérifier que le template existe
+    # VÃ©rifier que le template existe
     if not os.path.exists(TEMPLATE_PATH):
         TokenService.refund_token(
             session=session,
@@ -2730,7 +2815,7 @@ def generate_ppsps_freeform(project_id: int, session: Session = Depends(get_sess
     
     # Utiliser le TemplateFiller pour remplir le template
     try:
-        # Préparer les données du formulaire pour les placeholders
+        # PrÃ©parer les donnÃ©es du formulaire pour les placeholders
         form_data = {
             "name": proj.name or "",
             "address": proj.address or "",
@@ -2757,7 +2842,7 @@ def generate_ppsps_freeform(project_id: int, session: Session = Depends(get_sess
             model=OPENROUTER_DEFAULT_MODEL
         )
         
-        # Déterminer la version
+        # DÃ©terminer la version
         existing = session.exec(
             select(DocumentDB).where(
                 DocumentDB.project_id == project_id,
@@ -2766,20 +2851,20 @@ def generate_ppsps_freeform(project_id: int, session: Session = Depends(get_sess
         ).all()
         next_version = (max([d.version for d in existing]) + 1) if existing else 1
         
-        # Sauvegarder le DOCX généré dans un fichier
+        # Sauvegarder le DOCX gÃ©nÃ©rÃ© dans un fichier
         project_dir = _safe_path(UPLOADS_ROOT, _project_upload_dir(project_id))
         os.makedirs(project_dir, exist_ok=True)
         docx_filename = f"PPSPS_v{next_version}.docx"
         docx_path = _safe_path(project_dir, docx_filename)
         filled_doc.save(docx_path)
         
-        logger.info(f"[PPSPS] DOCX sauvegardé : {docx_path}")
+        logger.info(f"[PPSPS] DOCX sauvegardÃ© : {docx_path}")
         
-        # Enregistrer dans la base de données avec le chemin du DOCX
+        # Enregistrer dans la base de donnÃ©es avec le chemin du DOCX
         dbdoc = DocumentDB(
             project_id=project_id,
             doc_type="PPSPS",
-            content_md=f"[DOCX généré : {docx_path}]",
+            content_md=f"[DOCX gÃ©nÃ©rÃ© : {docx_path}]",
             version=next_version,
             status="draft",
         )
@@ -2787,14 +2872,14 @@ def generate_ppsps_freeform(project_id: int, session: Session = Depends(get_sess
         session.commit()
         session.refresh(dbdoc)
         
-        logger.info(f"[PPSPS] Document DB créé (ID: {dbdoc.id}, version {next_version})")
+        logger.info(f"[PPSPS] Document DB crÃ©Ã© (ID: {dbdoc.id}, version {next_version})")
         
         return {
             "ok": True,
             "document_id": dbdoc.id,
             "version": dbdoc.version,
             "docx_path": docx_path,
-            "message": "PPSPS généré avec succès depuis le template"
+            "message": "PPSPS gÃ©nÃ©rÃ© avec succÃ¨s depuis le template"
         }
         
     except json.JSONDecodeError as e:
@@ -2803,18 +2888,18 @@ def generate_ppsps_freeform(project_id: int, session: Session = Depends(get_sess
             session=session,
             user_id=user.id,
             project_id=project_id,
-            reason="Erreur de génération (JSON invalide) - remboursement automatique"
+            reason="Erreur de gÃ©nÃ©ration (JSON invalide) - remboursement automatique"
         )
-        raise HTTPException(status_code=502, detail="Erreur de génération : réponse IA invalide")
+        raise HTTPException(status_code=502, detail="Erreur de gÃ©nÃ©ration : rÃ©ponse IA invalide")
     except Exception as e:
-        logger.error(f"[PPSPS] Erreur génération : {e}")
+        logger.error(f"[PPSPS] Erreur gÃ©nÃ©ration : {e}")
         TokenService.refund_token(
             session=session,
             user_id=user.id,
             project_id=project_id,
-            reason="Erreur de génération - remboursement automatique"
+            reason="Erreur de gÃ©nÃ©ration - remboursement automatique"
         )
-        raise HTTPException(status_code=502, detail=f"Génération indisponible : {str(e)}")
+        raise HTTPException(status_code=502, detail=f"GÃ©nÃ©ration indisponible : {str(e)}")
 
 
 
@@ -2825,7 +2910,7 @@ def upload_file(project_id: int, file: UploadFile = File(...), session: Session 
     original = _safe_name(file.filename or "file")
     ext = _ext(original)
     if ext not in ALLOWED_EXTS:
-        raise HTTPException(status_code=400, detail=f"Extension non autorisée ({ext}).")
+        raise HTTPException(status_code=400, detail=f"Extension non autorisÃ©e ({ext}).")
     contents = file.file.read()
     size = len(contents)
     if size > MAX_FILE_MB * 1024 * 1024:
@@ -2840,7 +2925,7 @@ def upload_file(project_id: int, file: UploadFile = File(...), session: Session 
 
     extracted = extract_text_from_file(stored_path)
 
-    # extraction d'images associées (inchangé)
+    # extraction d'images associÃ©es (inchangÃ©)
     img_dir = _images_outdir(proj.id)
     new_imgs = []
     if ext == ".docx":
@@ -2929,7 +3014,7 @@ def _image_lookup_for_project(session: Session, project_id: int) -> dict[str, st
 def get_owned_project_or_404(project_id: int, user: UserDB, session: Session) -> ProjectDB:
     proj = session.get(ProjectDB, project_id)
     if not proj or getattr(proj, "owner_id", None) != user.id:
-        # on renvoie 404 pour ne rien révéler
+        # on renvoie 404 pour ne rien rÃ©vÃ©ler
         raise HTTPException(status_code=404, detail="Project not found")
     return proj
 
@@ -2952,45 +3037,9 @@ def ensure_file_is_owned(file_id: int, user: UserDB, session: Session) -> Attach
     return att
 
 
-# =====================================================================
-#                           ROUTES SEO
-# =====================================================================
-@app.get("/sitemap.xml")
-def sitemap():
-    urls = [
-        {"loc": SEOConfig.SITE_URL, "priority": "1.0", "changefreq": "daily"},
-        {"loc": f"{SEOConfig.SITE_URL}/home", "priority": "1.0", "changefreq": "daily"},
-        {"loc": f"{SEOConfig.SITE_URL}/register", "priority": "0.8", "changefreq": "monthly"},
-        {"loc": f"{SEOConfig.SITE_URL}/tokens/shop", "priority": "0.9", "changefreq": "weekly"},
-    ]
-    
-    sitemap_xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
-    sitemap_xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-    for url in urls:
-        sitemap_xml += f'  <url>\n'
-        sitemap_xml += f'    <loc>{url["loc"]}</loc>\n'
-        sitemap_xml += f'    <priority>{url["priority"]}</priority>\n'
-        sitemap_xml += f'    <changefreq>{url["changefreq"]}</changefreq>\n'
-        sitemap_xml += f'  </url>\n'
-    sitemap_xml += '</urlset>'
-    
-    from fastapi.responses import Response
-    return Response(content=sitemap_xml, media_type="application/xml")
-
-@app.get("/robots.txt")
-def robots_txt():
-    robots = f"""User-agent: *
-Allow: /
-Disallow: /ui/
-Disallow: /api/
-
-Sitemap: {SEOConfig.SITE_URL}/sitemap.xml
-"""
-    from fastapi.responses import Response
-    return Response(content=robots, media_type="text/plain")
 @app.get("/", include_in_schema=False)
 async def redirect_root(request: Request):
-    # Si l'utilisateur est connecté, aller vers /ui/projects
+    # Si l'utilisateur est connectÃ©, aller vers /ui/projects
     if request.session.get("uid"):
         return RedirectResponse(url="/ui/projects")
     # Sinon montrer la homepage
@@ -3025,7 +3074,7 @@ def home_page(request: Request):
             "ratingValue": "4.8",
             "reviewCount": "127"
         },
-        "description": "Générateur automatique de PPSPS par IA pour les professionnels du BTP"
+        "description": "GÃ©nÃ©rateur automatique de PPSPS par IA pour les professionnels du BTP"
     }
     
     return templates.TemplateResponse("index.html", {
@@ -3096,7 +3145,7 @@ def ui_register_post(
             "register.html",
             {
                 "request": request,
-                "error": "Email valide et mot de passe robuste requis (≥8, majuscule, minuscule, chiffre).",
+                "error": "Email valide et mot de passe robuste requis (â‰¥8, majuscule, minuscule, chiffre).",
                 "csrf_token": csrf
             },
             status_code=400
@@ -3104,7 +3153,7 @@ def ui_register_post(
     exists = session.exec(select(UserDB).where(UserDB.email == email_n)).first()
     if exists:
         csrf = _ensure_csrf_token(request)
-        return templates.TemplateResponse("register.html", {"request": request, "error": "Email déjà utilisé.", "csrf_token": csrf}, status_code=400)
+        return templates.TemplateResponse("register.html", {"request": request, "error": "Email dÃ©jÃ  utilisÃ©.", "csrf_token": csrf}, status_code=400)
 
     user = UserDB(email=email_n, password_hash=hash_pwd(password), is_admin=False)
     session.add(user); session.commit(); session.refresh(user)
@@ -3179,7 +3228,7 @@ def ui_project_detail(project_id: int, request: Request, session: Session = Depe
     ).all()
     ia_summary = {"mapped_fields": 0, "taches": 0, "sous_traitants": 0}
     csrf = _ensure_csrf_token(request)
-    # Récupérer le solde de jetons
+    # RÃ©cupÃ©rer le solde de jetons
     balance = TokenService.get_balance(session, user.id)
     return templates.TemplateResponse("project_detail.html", {
         "request": request, "p": proj, "docs": docs, "files": files, "ia_summary": ia_summary, "csrf_token": csrf, "balance": balance
@@ -3217,19 +3266,19 @@ async def ui_upload_file(
         raise HTTPException(status_code=400, detail="Quota fichiers atteint (50).")
     total_size = sum((r.size_bytes or 0) for r in existing)
 
-    # Lecture contrôlée
+    # Lecture contrÃ´lÃ©e
     contents = file.file.read()
     size = len(contents)
     if size > MAX_FILE_MB * 1024 * 1024:
         raise HTTPException(status_code=400, detail=f"Fichier trop volumineux (> {MAX_FILE_MB} Mo).")
     if (total_size + size) > (MAX_TOTAL_MB * 1024 * 1024):
-        raise HTTPException(status_code=400, detail="Quota de stockage projet dépassé (200 Mo).")
+        raise HTTPException(status_code=400, detail="Quota de stockage projet dÃ©passÃ© (200 Mo).")
 
     # Validation extension & MIME & signature
     original = _safe_name(file.filename or "file")
     ext = _ext(original)
     if ext not in ALLOWED_EXTS:
-        raise HTTPException(status_code=400, detail=f"Extension non autorisée ({ext}).")
+        raise HTTPException(status_code=400, detail=f"Extension non autorisÃ©e ({ext}).")
 
     mime = (file.content_type or "").lower()
     allowed_mimes = {
@@ -3241,7 +3290,7 @@ async def ui_upload_file(
         ".txt": {"text/plain"},
         ".md": {"text/markdown", "text/plain"},
     }
-    # tolérance MIME client imprécis, on vérifiera la signature
+    # tolÃ©rance MIME client imprÃ©cis, on vÃ©rifiera la signature
     header = contents[:8]
 
     def _looks_pdf(h: bytes) -> bool: return h.startswith(b"%PDF-")
@@ -3259,7 +3308,7 @@ async def ui_upload_file(
     if ext in (".txt", ".md") and not _looks_text(contents[:2048]):
         raise HTTPException(status_code=400, detail="Contenu texte invalide.")
 
-    # Écriture disque (chemin sûr)
+    # Ã‰criture disque (chemin sÃ»r)
     uid = datetime.now().strftime("%Y%m%d%H%M%S%f")
     stored_name = f"{uid}_{original}"
     folder = _safe_path(UPLOADS_ROOT, _project_upload_dir(proj.id))
@@ -3287,7 +3336,7 @@ async def ui_upload_file(
         for fp, page_no in _extract_images_from_pdf(stored_path, img_dir, keep_pages=keep):
             new_imgs.append((fp, page_no))
 
-    # === PATCH 2 : nom unique + chemin réel et sûr pour CHAQUE image extraite ===
+    # === PATCH 2 : nom unique + chemin rÃ©el et sÃ»r pour CHAQUE image extraite ===
     import uuid, time, shutil
     for fp, page_no in new_imgs:
         base = os.path.basename(fp)
@@ -3296,7 +3345,7 @@ async def ui_upload_file(
         uniq = f"{int(time.time())}_{uuid.uuid4().hex[:8]}{ext_img}"
         dst = _safe_path(img_dir, uniq)
 
-        # si l'extract a déjà mis le fichier dans img_dir, on renomme proprement
+        # si l'extract a dÃ©jÃ  mis le fichier dans img_dir, on renomme proprement
         try:
             shutil.move(fp, dst) if os.path.dirname(fp) == img_dir else shutil.copy2(fp, dst)
         except Exception:
@@ -3306,7 +3355,7 @@ async def ui_upload_file(
         att_img = AttachmentDB(
             project_id=proj.id,
             filename=base,
-            stored_path=dst,  # chemin FINAL réel
+            stored_path=dst,  # chemin FINAL rÃ©el
             mime_type="image/png",
             size_bytes=os.path.getsize(dst),
             extracted_text=(f"(image extraite de {original} page {page_no})" if page_no else "(image extraite)"),
@@ -3315,7 +3364,7 @@ async def ui_upload_file(
 
     session.commit()
 
-    # Pièce jointe principale (le fichier uploadé)
+    # PiÃ¨ce jointe principale (le fichier uploadÃ©)
     att = AttachmentDB(
         project_id=proj.id,
         filename=original,
@@ -3342,17 +3391,17 @@ async def ui_generate_doc(
     token = (form.get("csrf_token"))
     _check_csrf(request, token)
 
-    # 1) récupérer le projet d'abord
+    # 1) rÃ©cupÃ©rer le projet d'abord
     proj = get_owned_project_or_404(project_id, user, session)
 
-    # 2) refuser la génération s'il n'y a aucun fichier
+    # 2) refuser la gÃ©nÃ©ration s'il n'y a aucun fichier
     has_files = session.exec(
         select(AttachmentDB.id).where(AttachmentDB.project_id == proj.id)
     ).first()
     if not has_files:
         raise HTTPException(
             status_code=400,
-            detail="Ajoutez au moins une pièce avant de générer le PPSPS."
+            detail="Ajoutez au moins une piÃ¨ce avant de gÃ©nÃ©rer le PPSPS."
         )
 
     # 3) dispatcher par type
@@ -3362,7 +3411,7 @@ async def ui_generate_doc(
             res = generate_ppsps_freeform(proj.id, session, user)
             doc_id = res.get("document_id")
             if not doc_id:
-                raise HTTPException(status_code=500, detail="Génération PPSPS échouée")
+                raise HTTPException(status_code=500, detail="GÃ©nÃ©ration PPSPS Ã©chouÃ©e")
             return export_docx_by_id(doc_id, session=session, user=user)
         except HTTPException as e:
             # Si c'est une erreur 402 (jetons insuffisants), renvoyer du JSON
@@ -3471,7 +3520,7 @@ def purchase_tokens(package_id: int, request: Request, session: Session = Depend
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception:
-        raise HTTPException(status_code=500, detail="Erreur lors de la création du paiement")
+        raise HTTPException(status_code=500, detail="Erreur lors de la crÃ©ation du paiement")
 
 from fastapi import Header
 
@@ -3486,7 +3535,7 @@ async def stripe_webhook(request: Request, stripe_signature: str = Header(None, 
 
 
 # =====================================================================
-#                         KB UI ADMIN (sécurisée)
+#                         KB UI ADMIN (sÃ©curisÃ©e)
 # =====================================================================
 KB_BASE = Path("app/kb").resolve()
 
@@ -3522,7 +3571,7 @@ def ui_kb_save(request: Request, path: str = Form(...), content: str = Form(...)
     rel_path = unquote(path).strip().lstrip("/").replace("\\", "/")
     fs_path = (KB_BASE / rel_path).resolve()
     if KB_BASE not in fs_path.parents or not str(fs_path).endswith(".md"):
-        raise HTTPException(status_code=400, detail="Chemin non autorisé")
+        raise HTTPException(status_code=400, detail="Chemin non autorisÃ©")
     fs_path.parent.mkdir(parents=True, exist_ok=True)
     fs_path.write_text(content, encoding="utf-8")
     return RedirectResponse(url=f"/ui/kb?token={ADMIN_TOKEN}", status_code=303)
