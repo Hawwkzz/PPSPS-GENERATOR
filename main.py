@@ -298,7 +298,7 @@ class StripeService:
             # ===== Configuration SEO =====
 class SEOConfig:
     SITE_NAME = "PPSPS GENERATOR"
-    SITE_DOMAIN = "ppsps-generator.fr"  # Ã€ MODIFIER avec ton domaine
+    SITE_DOMAIN = "www.ppsps-generator.fr"  # Domaine avec www
     SITE_URL = f"https://{SITE_DOMAIN}"
     
     DEFAULT_TITLE = "PPSPS Generator - GÃ©nÃ©ration automatique de PPSPS par IA"
@@ -1013,7 +1013,7 @@ async def sitemap_xml():
     - D'autres routes génériques
     """
     # URL en dur pour garantir la stabilité
-    SITE_URL = "https://ppsps-generator.fr"
+    SITE_URL = "https://www.ppsps-generator.fr"
     
     urls = [
         {"loc": SITE_URL, "priority": "1.0", "changefreq": "daily"},
@@ -1065,7 +1065,7 @@ Disallow: /files/
 Disallow: /admin/
 
 # Sitemap
-Sitemap: https://ppsps-generator.fr/sitemap.xml
+Sitemap: https://www.ppsps-generator.fr/sitemap.xml
 """
     
     return Response(
