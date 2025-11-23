@@ -6,8 +6,8 @@
 
     <!-- SEO Meta Tags optimisés -->
     <title>{% block title %}PPSPS Generator - Génération Automatique de PPSPS par IA | BTP{% endblock %}</title>
-    <meta name="description" content="{{ meta.description if meta else 'Générez automatiquement votre PPSPS avec notre IA spécialisée BTP. Jusqu\'à 90% du contenu produit en quelques minutes. Conforme, rapide, économique. Essai gratuit.' }}">
-    <meta name="keywords" content="{{ meta.keywords if meta else 'PPSPS, génération PPSPS, IA BTP, prévention chantier, plan sécurité, PPSPS automatique, générateur PPSPS, PPSPS en ligne, document BTP, coordonnateur SPS, PGC, DUER, sécurité chantier' }}">
+    <meta name="description" content="{{ meta.description if meta else 'PPSPS : Créer, faire et générer votre PPSPS automatiquement avec notre IA. 50€ par document, en moins de 10 minutes. La solution pour créer un PPSPS conforme rapidement.' }}">
+    <meta name="keywords" content="{{ meta.keywords if meta else 'PPSPS, faire PPSPS, créer PPSPS, générer PPSPS, faire un PPSPS, créer un PPSPS, comment faire un PPSPS, PPSPS automatique, générateur PPSPS, PPSPS IA, PPSPS en ligne, plan sécurité, prévention chantier, document BTP, coordonnateur SPS, PGC, DUER, sécurité chantier' }}">
     <meta name="robots" content="{{ meta.robots if meta else 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1' }}">
     <meta name="author" content="PPSPS Generator">
     <meta name="language" content="fr-FR">
@@ -23,8 +23,8 @@
     <!-- Open Graph / Facebook optimisés -->
     <meta property="og:type" content="{{ meta.og_type if meta else 'website' }}">
     <meta property="og:url" content="{{ meta.og_url if meta else request.url }}">
-    <meta property="og:title" content="{{ meta.og_title if meta else 'PPSPS Generator - Génération Automatique de PPSPS par IA' }}">
-    <meta property="og:description" content="{{ meta.og_description if meta else 'Générez automatiquement votre PPSPS avec notre IA spécialisée BTP. Jusqu\'à 90% du contenu en quelques minutes.' }}">
+    <meta property="og:title" content="{{ meta.og_title if meta else 'PPSPS : Créer et Générer Votre PPSPS Automatiquement en 10 Minutes' }}">
+    <meta property="og:description" content="{{ meta.og_description if meta else 'Faire un PPSPS n\'a jamais été aussi simple. Créez et générez votre PPSPS avec l\'IA en moins de 10 minutes. 50€ par document.' }}">
     <meta property="og:image" content="{{ meta.og_image if meta else '/static/og-image.jpg' }}">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -55,8 +55,9 @@
           "@type": "WebSite",
           "@id": "{{ request.url_root }}#website",
           "url": "{{ request.url_root }}",
-          "name": "PPSPS Generator",
-          "description": "Générateur automatique de PPSPS par intelligence artificielle pour les professionnels du BTP",
+          "name": "PPSPS Generator - Créer et Générer des PPSPS",
+          "alternateName": ["PPSPS", "Faire un PPSPS", "Créer un PPSPS", "Générer un PPSPS"],
+          "description": "Plateforme pour créer, faire et générer des PPSPS automatiquement par intelligence artificielle. Solution rapide et conforme pour les professionnels du BTP.",
           "potentialAction": {
             "@type": "SearchAction",
             "target": {
@@ -90,33 +91,72 @@
           "@type": "WebPage",
           "@id": "{{ request.url }}#webpage",
           "url": "{{ request.url }}",
-          "name": "{{ meta.title if meta else 'PPSPS Generator' }}",
+          "name": "{{ meta.title if meta else 'PPSPS : Créer, Faire et Générer Votre PPSPS' }}",
           "isPartOf": {
             "@id": "{{ request.url_root }}#website"
           },
           "about": {
             "@id": "{{ request.url_root }}#organization"
           },
-          "description": "{{ meta.description if meta else 'Générateur automatique de PPSPS par IA' }}",
-          "inLanguage": "fr-FR"
+          "description": "{{ meta.description if meta else 'Créer un PPSPS, faire un PPSPS ou générer un PPSPS automatiquement avec l\'IA en moins de 10 minutes' }}",
+          "inLanguage": "fr-FR",
+          "keywords": "PPSPS, faire PPSPS, créer PPSPS, générer PPSPS, PPSPS automatique"
         },
         {
           "@type": "SoftwareApplication",
-          "name": "PPSPS Generator",
+          "name": "PPSPS Generator - Générateur de PPSPS par IA",
           "applicationCategory": "BusinessApplication",
           "operatingSystem": "Web",
+          "featureList": [
+            "Créer un PPSPS automatiquement",
+            "Faire un PPSPS en 10 minutes",
+            "Générer un PPSPS conforme",
+            "Analyse IA des risques",
+            "Export Word et PDF",
+            "Conformité réglementaire"
+          ],
           "offers": {
             "@type": "Offer",
-            "price": "0",
+            "price": "50",
             "priceCurrency": "EUR",
-            "availability": "https://schema.org/InStock"
+            "availability": "https://schema.org/InStock",
+            "description": "Génération de PPSPS - 1 document pour 50€"
           },
           "aggregateRating": {
             "@type": "AggregateRating",
             "ratingValue": "4.8",
             "reviewCount": "127"
           },
-          "description": "Générateur automatique de Plan Particulier de Sécurité et de Protection de la Santé (PPSPS) utilisant l'intelligence artificielle pour les professionnels du BTP"
+          "description": "Outil pour créer, faire et générer des Plans Particuliers de Sécurité et de Protection de la Santé (PPSPS) automatiquement. L'intelligence artificielle analyse vos documents (PGC, DUER, plans) et génère un PPSPS complet et conforme en moins de 10 minutes."
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "Comment faire un PPSPS rapidement ?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Pour faire un PPSPS rapidement, utilisez notre générateur IA. Uploadez vos documents (PGC, plans, DUER), lancez la génération et recevez votre PPSPS complet en moins de 10 minutes."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Comment créer un PPSPS pour mon chantier ?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Créer un PPSPS avec notre IA est simple : l'outil analyse automatiquement vos documents et crée un PPSPS structuré, conforme et adapté à votre projet. Vous n'avez qu'à valider et ajuster si nécessaire."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Comment générer un PPSPS avec l'IA ?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Pour générer un PPSPS avec l'IA : créez un compte, uploadez vos documents (PGC, plans, DUER), puis cliquez sur 'Générer le PPSPS'. L'IA génère automatiquement un PPSPS complet en 5-10 minutes au format Word éditable."
+              }
+            }
+          ]
         }
       ]
     }
@@ -290,10 +330,9 @@
           <div>
             <h3 class="font-bold text-slate-900 mb-3">Contact</h3>
             <ul class="space-y-2 text-sm">
-              <li><a href="mailto:contact@ppsps-generator.fr" class="text-slate-600 hover:text-blue-600 transition-colors">contact@ppsps-generator.fr</a></li>
+              <li><a href="/cdn-cgi/l/email-protection#197a76776d787a6d5969696a696a347e7c777c6b786d766b377f6b" class="text-slate-600 hover:text-blue-600 transition-colors"><span class="__cf_email__" data-cfemail="afccc0c1dbceccdbefdfdfdcdfdc82c8cac1caddcedbc0dd81c9dd">[email&#160;protected]</span></a></li>
             </ul>
           </div>
         </div>
         
-        <div class="border-t border-slate-200 pt-6 text-center text-sm text-slate-600">
-          © {{ now().year if now else '2025' }} PPSPS Generator - Génération autom
+        <div class="bord
