@@ -325,14 +325,8 @@ document.getElementById('gen-form')?.addEventListener('submit', async function(e
   const btnText = button.querySelector('.btn-text');
   const btnLoading = button.querySelector('.btn-loading');
   
-  // Désactiver le bouton
+  // Désactiver le bouton temporairement
   button.disabled = true;
-  button.classList.remove('hover:from-blue-700', 'hover:to-blue-800', 'hover:shadow-blue-600/50');
-  button.classList.add('opacity-90', 'cursor-wait');
-  
-  // Afficher le loading
-  btnText.classList.add('invisible');
-  btnLoading.classList.remove('hidden');
   
   try {
     // Récupérer les données du formulaire
@@ -344,7 +338,7 @@ document.getElementById('gen-form')?.addEventListener('submit', async function(e
       body: formData
     });
     
-    // Cas 1 : Erreur 402 - Jetons insuffisants
+    // Cas 1 : Erreur 402 - Jetons insuffisants (NE PAS afficher le loading)
     if (response.status === 402) {
       const errorData = await response.json();
       alert(errorData.message || 'Jetons insuffisants');
@@ -357,7 +351,13 @@ document.getElementById('gen-form')?.addEventListener('submit', async function(e
       throw new Error('Erreur lors de la génération');
     }
     
-    // Cas 3 : Succès - télécharger le fichier
+    // Cas 3 : Succès - MAINTENANT on affiche le loading
+    button.classList.remove('hover:from-blue-700', 'hover:to-blue-800', 'hover:shadow-blue-600/50');
+    button.classList.add('opacity-90', 'cursor-wait');
+    btnText.classList.add('invisible');
+    btnLoading.classList.remove('hidden');
+    
+    // Télécharger le fichier
     const blob = await response.blob();
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
