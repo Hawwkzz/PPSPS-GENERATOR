@@ -221,7 +221,7 @@ class StripeService:
                     'unit_amount': package.price_cents,
                     'product_data': {
                         'name': package.name,
-                        'description': f"{package.tokens} jeton pour gÃ©nÃ©rer un PPSPS",
+                        'description': f"{package.tokens} jeton pour générer un PPSPS",
                     },
                 },
                 'quantity': 1,
