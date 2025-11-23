@@ -315,8 +315,10 @@
 
 {% block scripts %}
 <script>
-// Gestion du bouton de génération avec loading
-document.getElementById('gen-form')?.addEventListener('submit', function(e) {
+// Gestion du bouton de génération avec loading et redirection jetons
+document.getElementById('gen-form')?.addEventListener('submit', async function(e) {
+  e.preventDefault(); // Empêcher la soumission normale
+  
   const button = document.getElementById('gen-button');
   if (!button || button.disabled) return;
   
@@ -332,14 +334,53 @@ document.getElementById('gen-form')?.addEventListener('submit', function(e) {
   btnText.classList.add('invisible');
   btnLoading.classList.remove('hidden');
   
-  // Timeout de sécurité (réactiver après 5 minutes si pas de réponse)
-  setTimeout(() => {
+  try {
+    // Récupérer les données du formulaire
+    const formData = new FormData(this);
+    
+    // Envoyer la requête
+    const response = await fetch(this.action, {
+      method: 'POST',
+      body: formData
+    });
+    
+    // Cas 1 : Erreur 402 - Jetons insuffisants
+    if (response.status === 402) {
+      const errorData = await response.json();
+      alert(errorData.message || 'Jetons insuffisants');
+      window.location.href = errorData.redirect || '/tokens/shop';
+      return;
+    }
+    
+    // Cas 2 : Autres erreurs
+    if (!response.ok) {
+      throw new Error('Erreur lors de la génération');
+    }
+    
+    // Cas 3 : Succès - télécharger le fichier
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `PPSPS_${Date.now()}.docx`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    
+    // Recharger la page pour voir le nouveau document
+    setTimeout(() => location.reload(), 500);
+    
+  } catch (error) {
+    alert('Erreur : ' + error.message);
+    
+    // Réactiver le bouton en cas d'erreur
     button.disabled = false;
     button.classList.remove('opacity-90', 'cursor-wait');
     button.classList.add('hover:from-blue-700', 'hover:to-blue-800', 'hover:shadow-blue-600/50');
     btnText.classList.remove('invisible');
     btnLoading.classList.add('hidden');
-  }, 300000);
+  }
 });
 
 // Suppression de fichier
