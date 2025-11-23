@@ -3069,12 +3069,8 @@ def home_page(request: Request):
             "priceCurrency": "EUR",
             "availability": "https://schema.org/InStock"
         },
-        "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": "4.8",
-            "reviewCount": "127"
-        },
-        "description": "GÃ©nÃ©rateur automatique de PPSPS par IA pour les professionnels du BTP"
+
+        "description": "Générateur automatique de PPSPS par IA pour les professionnels du BTP"
     }
     
     return templates.TemplateResponse("index.html", {
@@ -3092,7 +3088,18 @@ def home_page(request: Request):
 @app.get("/login", response_class=HTMLResponse)
 def ui_login(request: Request):
     csrf = _ensure_csrf_token(request)
-    return templates.TemplateResponse("login.html", {"request": request, "error": None, "csrf_token": csrf})
+    meta = SEOConfig.get_meta_tags(
+        title="Connexion - PPSPS Generator",
+        description="Connectez-vous à votre compte PPSPS Generator pour accéder à vos projets et générer vos documents.",
+        canonical_url=f"{SEOConfig.SITE_URL}/login",
+        no_index=True
+    )
+    return templates.TemplateResponse("login.html", {
+        "request": request, 
+        "error": None, 
+        "csrf_token": csrf,
+        "meta": meta
+    })
 
 @app.post("/login")
 def ui_login_post(
@@ -3118,7 +3125,19 @@ def ui_logout(request: Request):
 @app.get("/register", response_class=HTMLResponse)
 def ui_register(request: Request):
     csrf = _ensure_csrf_token(request)
-    return templates.TemplateResponse("register.html", {"request": request, "error": None, "csrf_token": csrf})
+    seo_config = SEO_PAGES.get("register", {})
+    meta = SEOConfig.get_meta_tags(
+        title=seo_config.get("title"),
+        description=seo_config.get("description"),
+        keywords=seo_config.get("keywords"),
+        canonical_url=f"{SEOConfig.SITE_URL}/register"
+    )
+    return templates.TemplateResponse("register.html", {
+        "request": request, 
+        "error": None, 
+        "csrf_token": csrf,
+        "meta": meta
+    })
 
 @app.post("/register")
 def ui_register_post(
