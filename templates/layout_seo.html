@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- SEO Meta Tags optimisés -->
-    <title>{{ meta.title if meta else 'PPSPS Generator - G&eacute;n&eacute;ration Automatique de PPSPS par IA | BTP' }}</title>
-    <meta name="description" content="{{ meta.description if meta else 'G&eacute;n&eacute;rez automatiquement votre PPSPS avec notre IA sp&eacute;cialis&eacute;e BTP. Jusqu\'&agrave; 90% du contenu produit en quelques minutes. Conforme, rapide, &eacute;conomique. Essai gratuit.' }}">
-    <meta name="keywords" content="{{ meta.keywords if meta else 'PPSPS, g&eacute;n&eacute;ration PPSPS, IA BTP, pr&eacute;vention chantier, plan s&eacute;curit&eacute;, PPSPS automatique, g&eacute;n&eacute;rateur PPSPS, PPSPS en ligne, document BTP, coordonnateur SPS, PGC, DUER, s&eacute;curit&eacute; chantier' }}">
+    <title>{% block title %}PPSPS Generator - Génération Automatique de PPSPS par IA | BTP{% endblock %}</title>
+    <meta name="description" content="{{ meta.description if meta else 'Générez automatiquement votre PPSPS avec notre IA spécialisée BTP. Jusqu\'à 90% du contenu produit en quelques minutes. Conforme, rapide, économique. Essai gratuit.' }}">
+    <meta name="keywords" content="{{ meta.keywords if meta else 'PPSPS, génération PPSPS, IA BTP, prévention chantier, plan sécurité, PPSPS automatique, générateur PPSPS, PPSPS en ligne, document BTP, coordonnateur SPS, PGC, DUER, sécurité chantier' }}">
     <meta name="robots" content="{{ meta.robots if meta else 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1' }}">
     <meta name="author" content="PPSPS Generator">
     <meta name="language" content="fr-FR">
@@ -23,8 +23,8 @@
     <!-- Open Graph / Facebook optimisés -->
     <meta property="og:type" content="{{ meta.og_type if meta else 'website' }}">
     <meta property="og:url" content="{{ meta.og_url if meta else request.url }}">
-    <meta property="og:title" content="{{ meta.og_title if meta else 'PPSPS Generator - G&eacute;n&eacute;ration Automatique de PPSPS par IA' }}">
-    <meta property="og:description" content="{{ meta.og_description if meta else 'G&eacute;n&eacute;rez automatiquement votre PPSPS avec notre IA sp&eacute;cialis&eacute;e BTP. Jusqu\'&agrave; 90% du contenu en quelques minutes.' }}">
+    <meta property="og:title" content="{{ meta.og_title if meta else 'PPSPS Generator - Génération Automatique de PPSPS par IA' }}">
+    <meta property="og:description" content="{{ meta.og_description if meta else 'Générez automatiquement votre PPSPS avec notre IA spécialisée BTP. Jusqu\'à 90% du contenu en quelques minutes.' }}">
     <meta property="og:image" content="{{ meta.og_image if meta else '/static/og-image.jpg' }}">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -34,8 +34,8 @@
     <!-- Twitter Card optimisé -->
     <meta name="twitter:card" content="{{ meta.twitter_card if meta else 'summary_large_image' }}">
     <meta name="twitter:url" content="{{ meta.og_url if meta else request.url }}">
-    <meta name="twitter:title" content="{{ meta.twitter_title if meta else 'PPSPS Generator - G&eacute;n&eacute;ration Automatique par IA' }}">
-    <meta name="twitter:description" content="{{ meta.twitter_description if meta else 'G&eacute;n&eacute;rez votre PPSPS automatiquement avec notre IA BTP' }}">
+    <meta name="twitter:title" content="{{ meta.twitter_title if meta else 'PPSPS Generator - Génération Automatique par IA' }}">
+    <meta name="twitter:description" content="{{ meta.twitter_description if meta else 'Générez votre PPSPS automatiquement avec notre IA BTP' }}">
     <meta name="twitter:image" content="{{ meta.twitter_image if meta else '/static/og-image.jpg' }}">
     {% if meta and meta.twitter_site %}
     <meta name="twitter:site" content="{{ meta.twitter_site }}">
